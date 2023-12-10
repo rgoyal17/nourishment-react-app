@@ -1,113 +1,79 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React, { useRef } from "react";
-import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { Colors, useTheme } from "@rneui/themed";
 
-const Header_Max_Height = 240;
-const Header_Min_Height = 120;
-const Scroll_Distance = Header_Max_Height - Header_Min_Height;
-
-const DynamicHeader = ({ value }: any) => {
-  const { theme } = useTheme();
-  const styles = makeStyles(theme.colors);
-
-  const animatedHeaderColor = value.interpolate({
-    inputRange: [0, Scroll_Distance],
-    outputRange: ["white", "black"],
-    extrapolate: "clamp",
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.header,
-        {
-          backgroundColor: animatedHeaderColor,
-        },
-      ]}
-    >
-      <Text style={styles.title}>Header Content</Text>
-    </Animated.View>
-  );
-};
+const HEADER_MAX_HEIGHT = 400;
+const HEADER_MIN_HEIGHT = 103;
+const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
 export function RecipeItem({ route }: RecipeItemProps) {
-  // const { theme } = useTheme();
-  // const styles = makeStyles(theme.colors);
+  const { theme } = useTheme();
+  const styles = makeStyles(theme.colors);
+  const { recipe } = route.params;
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const scrollOffsetY = useRef(new Animated.Value(0)).current;
-  const { recipe } = route.params;
+
+  const data = Array.from({ length: 30 });
+
+  const headerHeight = scrollOffsetY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+    extrapolate: "clamp",
+  });
+
+  const imageOpacity = scrollOffsetY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+    outputRange: [1, 0.8, 0],
+    extrapolate: "clamp",
+  });
+  const imageTranslate = scrollOffsetY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, -100],
+    extrapolate: "clamp",
+  });
 
   return (
-    <View>
-      <DynamicHeader value={scrollOffsetY} />
+    <View style={styles.container}>
       <ScrollView
-        scrollEventThrottle={5}
-        showsVerticalScrollIndicator={false}
+        style={styles.container}
+        scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollOffsetY } } }], {
           useNativeDriver: false,
         })}
       >
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
-        <Text>{recipe.title}</Text>
+        <View style={styles.scrollViewContent}>
+          {data.map((_, i) => (
+            <View key={i} style={styles.row}>
+              <Text>{i}</Text>
+            </View>
+          ))}
+        </View>
       </ScrollView>
+      <Animated.View style={[styles.header, { height: headerHeight }]}>
+        {isLoading ? (
+          <ActivityIndicator
+            style={styles.backgroundImage}
+            color={theme.colors.secondary}
+            size="large"
+          />
+        ) : null}
+        <Animated.Image
+          style={[
+            styles.backgroundImage,
+            { opacity: imageOpacity, transform: [{ translateY: imageTranslate }] },
+          ]}
+          source={{ uri: recipe.image }}
+          onLoad={() => setIsLoading(false)}
+        />
+        <View style={styles.bar}>
+          <Text style={styles.title}>Title</Text>
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -118,17 +84,38 @@ const makeStyles = (colors: Colors) =>
       flex: 1,
       backgroundColor: colors.secondary,
     },
-    header: {
-      justifyContent: "center",
+    scrollViewContent: {
+      marginTop: HEADER_MAX_HEIGHT,
+    },
+    row: {
+      height: 40,
+      margin: 16,
+      backgroundColor: "#D3D3D3",
       alignItems: "center",
+      justifyContent: "center",
+    },
+    header: {
+      position: "absolute",
+      top: 0,
       left: 0,
       right: 0,
-      paddingTop: 25,
-      height: 100,
+      backgroundColor: colors.primary,
+      overflow: "hidden",
+    },
+    bar: {
+      marginTop: 50,
+      height: 32,
+      alignItems: "center",
+      justifyContent: "center",
     },
     title: {
-      color: "#ffff",
-      fontWeight: "bold",
-      fontSize: 20,
+      color: colors.secondary,
+    },
+    backgroundImage: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: HEADER_MAX_HEIGHT,
     },
   });

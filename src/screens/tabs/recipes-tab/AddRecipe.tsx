@@ -106,7 +106,7 @@ export function AddRecipe({ navigation }: AddRecipeProps) {
       const res = await openai.images.generate({
         prompt: recipe.title,
         response_format: "url",
-        size: "1024x1024",
+        size: "512x512",
       });
       setRecipe({ image: res.data.at(0)?.url ?? "" });
     } catch (e) {

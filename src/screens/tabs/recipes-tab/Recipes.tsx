@@ -7,6 +7,7 @@ import { StackScreenProps } from "@react-navigation/stack";
 import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { useAuthentication } from "../../../hooks/useAuthentication";
+import { ActivityIndicator } from "react-native";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
@@ -51,7 +52,16 @@ export function Recipes({ navigation }: RecipesProps) {
                   <Icon name="photo" color={theme.colors.grey2} size={70} />
                 </View>
               ) : (
-                <Image style={styles.image} source={{ uri: item.image }} />
+                <Image
+                  style={styles.image}
+                  source={{ uri: item.image }}
+                  PlaceholderContent={
+                    <ActivityIndicator
+                      style={styles.activityIndicator}
+                      color={theme.colors.primary}
+                    />
+                  }
+                />
               )}
               <Text numberOfLines={3} style={styles.title}>
                 {item.title}
@@ -109,5 +119,11 @@ const makeStyles = (colors: Colors) =>
       fontSize: 15,
       fontWeight: "600",
       padding: 5,
+    },
+    activityIndicator: {
+      backgroundColor: colors.white,
+      borderRadius: 20,
+      height: "100%",
+      width: "100%",
     },
   });
