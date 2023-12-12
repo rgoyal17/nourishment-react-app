@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Button, Colors, Icon, useTheme } from "@rneui/themed";
+import { BottomSheet, Button, Colors, Icon, ListItem, useTheme } from "@rneui/themed";
 import { Recipe } from "../../../redux/recipesSlice";
 
 const HEADER_MAX_HEIGHT = 400;
@@ -44,6 +44,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           ))}
         </View>
       </ScrollView>
+
       <DynamicHeader
         recipe={recipe}
         scrollOffsetY={scrollOffsetY}
@@ -78,7 +79,7 @@ function DynamicHeader({ recipe, scrollOffsetY, onBackPress }: DynamicHeaderProp
   });
   const imageTranslate = scrollOffsetY.interpolate({
     inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -100],
+    outputRange: [0, -50],
     extrapolate: "clamp",
   });
 
@@ -113,6 +114,23 @@ function DynamicHeader({ recipe, scrollOffsetY, onBackPress }: DynamicHeaderProp
           onPress={() => setIsBottomSheetVisible(true)}
         />
       </View>
+      <BottomSheet
+        isVisible={isBottomSheetVisible}
+        onBackdropPress={() => setIsBottomSheetVisible(false)}
+      >
+        <ListItem>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="edit" />
+            <ListItem.Title>Edit</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem containerStyle={{ paddingBottom: 40 }}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="delete" />
+            <ListItem.Title>Delete</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </BottomSheet>
     </Animated.View>
   );
 }
@@ -161,5 +179,12 @@ const makeStyles = (colors: Colors) =>
       left: 0,
       right: 0,
       height: HEADER_MAX_HEIGHT,
+      width: null,
+    },
+    bottomSheetOption: {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      columnGap: 10,
     },
   });
