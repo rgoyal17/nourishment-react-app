@@ -1,8 +1,17 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React, { useRef } from "react";
-import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Animated,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Colors, useTheme } from "@rneui/themed";
+import { Button, Colors, Icon, useTheme } from "@rneui/themed";
+import { Recipe } from "../../../redux/recipesSlice";
 
 const HEADER_MAX_HEIGHT = 400;
 const HEADER_MIN_HEIGHT = 103;
@@ -10,15 +19,51 @@ const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
-export function RecipeItem({ route }: RecipeItemProps) {
+export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { recipe } = route.params;
-  const [isLoading, setIsLoading] = React.useState(true);
 
   const scrollOffsetY = useRef(new Animated.Value(0)).current;
 
   const data = Array.from({ length: 30 });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollOffsetY } } }], {
+          useNativeDriver: false,
+        })}
+      >
+        <View style={styles.scrollViewContent}>
+          {data.map((_, i) => (
+            <View key={i} style={styles.row}>
+              <Text>{i}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+      <DynamicHeader
+        recipe={recipe}
+        scrollOffsetY={scrollOffsetY}
+        onBackPress={() => navigation.goBack()}
+      />
+    </SafeAreaView>
+  );
+}
+
+interface DynamicHeaderProps {
+  recipe: Recipe;
+  scrollOffsetY: Animated.Value;
+  onBackPress: () => void;
+}
+
+function DynamicHeader({ recipe, scrollOffsetY, onBackPress }: DynamicHeaderProps) {
+  const { theme } = useTheme();
+  const styles = makeStyles(theme.colors);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = React.useState(false);
 
   const headerHeight = scrollOffsetY.interpolate({
     inputRange: [0, HEADER_SCROLL_DISTANCE],
@@ -38,43 +83,37 @@ export function RecipeItem({ route }: RecipeItemProps) {
   });
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.container}
-        scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollOffsetY } } }], {
-          useNativeDriver: false,
-        })}
-      >
-        <View style={styles.scrollViewContent}>
-          {data.map((_, i) => (
-            <View key={i} style={styles.row}>
-              <Text>{i}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-      <Animated.View style={[styles.header, { height: headerHeight }]}>
-        {isLoading ? (
-          <ActivityIndicator
-            style={styles.backgroundImage}
-            color={theme.colors.secondary}
-            size="large"
-          />
-        ) : null}
-        <Animated.Image
-          style={[
-            styles.backgroundImage,
-            { opacity: imageOpacity, transform: [{ translateY: imageTranslate }] },
-          ]}
-          source={{ uri: recipe.image }}
-          onLoad={() => setIsLoading(false)}
+    <Animated.View style={[styles.header, { height: headerHeight }]}>
+      {isLoading ? (
+        <ActivityIndicator
+          style={styles.backgroundImage}
+          color={theme.colors.secondary}
+          size="large"
         />
-        <View style={styles.bar}>
-          <Text style={styles.title}>Title</Text>
-        </View>
-      </Animated.View>
-    </View>
+      ) : null}
+      <Animated.Image
+        style={[
+          styles.backgroundImage,
+          { opacity: imageOpacity, transform: [{ translateY: imageTranslate }] },
+        ]}
+        source={{ uri: recipe.image }}
+        onLoad={() => setIsLoading(false)}
+      />
+      <View style={styles.headerContent}>
+        <Button
+          color={theme.colors.white}
+          icon={<Icon name="chevron-left" color={theme.colors.primary} size={30} />}
+          buttonStyle={styles.headerButton}
+          onPress={onBackPress}
+        />
+        <Button
+          color={theme.colors.white}
+          icon={<Icon name="more-horiz" color={theme.colors.primary} size={30} />}
+          buttonStyle={styles.headerButton}
+          onPress={() => setIsBottomSheetVisible(true)}
+        />
+      </View>
+    </Animated.View>
   );
 }
 
@@ -102,14 +141,19 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.primary,
       overflow: "hidden",
     },
-    bar: {
-      marginTop: 50,
-      height: 32,
-      alignItems: "center",
-      justifyContent: "center",
+    headerContent: {
+      marginTop: 60,
+      marginLeft: 10,
+      marginRight: 10,
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "space-between",
     },
-    title: {
-      color: colors.secondary,
+    headerButton: {
+      borderRadius: 30,
+      padding: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
     },
     backgroundImage: {
       position: "absolute",
