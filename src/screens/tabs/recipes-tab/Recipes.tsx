@@ -47,7 +47,7 @@ export function Recipes({ navigation }: RecipesProps) {
             onPress={() => navigation.navigate("RecipeItem", { recipe: item })}
           >
             <View style={styles.recipe}>
-              {item.image.trim() === "" ? (
+              {item.image === "" ? (
                 <View style={styles.noImage}>
                   <Icon name="photo" color={theme.colors.grey2} size={70} />
                 </View>

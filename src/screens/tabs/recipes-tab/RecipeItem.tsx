@@ -3,6 +3,8 @@ import React, { useRef } from "react";
 import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { Colors, useTheme, Image, Button, Icon, BottomSheet, ListItem } from "@rneui/themed";
+import NumericInput from "react-native-numeric-input";
+import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -11,8 +13,11 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const styles = makeStyles(theme.colors);
   const { recipe } = route.params;
   const [isBottomSheetVisible, setIsBottomSheetVisible] = React.useState(false);
+  const [servings, setServings] = React.useState(
+    recipe.servings !== "" ? Number(recipe.servings) : undefined,
+  );
 
-  const imageExists = React.useMemo(() => recipe.image.trim() !== "", [recipe.image]);
+  const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
 
   const yOffset = useRef(new Animated.Value(0)).current;
 
@@ -71,20 +76,39 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
             }
           />
         ) : null}
-        <View style={{ padding: 20 }}>
+        <View style={styles.content}>
           <Text style={styles.title}>{recipe.title}</Text>
-          <View style={styles.time}>
-            {recipe.prepTime.trim() != "" ? (
-              <Text style={styles.timeText}>Prep time: {recipe.prepTime}</Text>
-            ) : null}
-            {recipe.cookTime.trim() !== "" ? (
-              <Text style={styles.timeText}>Cook time: {recipe.cookTime}</Text>
-            ) : null}
-          </View>
-          {/* {recipe.servings.trim() !== "" ? <Input typp="numeric" /> : null} */}
-          <Text>{SOME_TEXT}</Text>
+          {recipe.prepTime !== "" || recipe.cookTime !== "" ? (
+            <View style={styles.time}>
+              {recipe.prepTime != "" ? (
+                <Text style={styles.timeText}>Prep time: {recipe.prepTime} mins</Text>
+              ) : null}
+              {recipe.cookTime !== "" ? (
+                <Text style={styles.timeText}>Cook time: {recipe.cookTime} mins</Text>
+              ) : null}
+            </View>
+          ) : null}
+          {servings != null ? (
+            <View style={styles.servings}>
+              <Text style={styles.servingsText}>Servings: </Text>
+              <NumericInput
+                minValue={1}
+                onChange={(serving) => setServings(serving)}
+                rounded
+                totalHeight={30}
+                totalWidth={100}
+                value={servings}
+              />
+            </View>
+          ) : null}
+          <IngredientsAndInstructions
+            ingredients={recipe.ingredients}
+            instructions={recipe.instructions}
+          />
+          {/* <Text>{SOME_TEXT}</Text> */}
         </View>
       </ScrollView>
+
       <BottomSheet
         isVisible={isBottomSheetVisible}
         onBackdropPress={() => setIsBottomSheetVisible(false)}
@@ -130,6 +154,11 @@ const makeStyles = (colors: Colors) =>
       height: "100%",
       width: "100%",
     },
+    content: {
+      padding: 20,
+      display: "flex",
+      rowGap: 10,
+    },
     title: {
       fontSize: 30,
       fontWeight: "500",
@@ -137,12 +166,20 @@ const makeStyles = (colors: Colors) =>
     time: {
       display: "flex",
       flexDirection: "row",
-      columnGap: 30,
+      columnGap: 20,
     },
     timeText: {
       fontSize: 20,
       fontWeight: "400",
-      paddingVertical: 10,
+    },
+    servings: {
+      alignItems: "center",
+      display: "flex",
+      flexDirection: "row",
+    },
+    servingsText: {
+      fontSize: 15,
+      fontWeight: "400",
     },
   });
 

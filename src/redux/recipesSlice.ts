@@ -39,7 +39,7 @@ export const addNewRecipe = createAsyncThunk(
     const id = uuidv4();
 
     let image = "";
-    if (recipe.image.trim() !== "") {
+    if (recipe.image !== "") {
       image = await uploadToFirebase(recipe.image, `${userId}/${id}/image.jpg`);
     }
 
