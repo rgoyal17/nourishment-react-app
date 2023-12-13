@@ -34,7 +34,7 @@ export function RecipesTab() {
         component={AddRecipe}
         options={{ headerRight: () => <Button title="Done" /> }}
       />
-      <Stack.Screen name="RecipeItem" component={RecipeItem} options={{ headerShown: false }} />
+      <Stack.Screen name="RecipeItem" component={RecipeItem} options={{ title: "" }} />
       <Stack.Screen name="Recipes" component={Recipes} />
     </Stack.Navigator>
   );

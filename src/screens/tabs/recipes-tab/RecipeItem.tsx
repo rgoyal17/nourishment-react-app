@@ -1,21 +1,8 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React, { useRef } from "react";
-import {
-  ActivityIndicator,
-  Animated,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { BottomSheet, Button, Colors, Icon, ListItem, useTheme } from "@rneui/themed";
-import { Recipe } from "../../../redux/recipesSlice";
-
-const HEADER_MAX_HEIGHT = 400;
-const HEADER_MIN_HEIGHT = 103;
-const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
+import { Colors, useTheme, Image, Button, Icon, BottomSheet, ListItem } from "@rneui/themed";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -23,97 +10,81 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { recipe } = route.params;
-
-  const scrollOffsetY = useRef(new Animated.Value(0)).current;
-
-  const data = Array.from({ length: 30 });
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollOffsetY } } }], {
-          useNativeDriver: false,
-        })}
-      >
-        <View style={styles.scrollViewContent}>
-          {data.map((_, i) => (
-            <View key={i} style={styles.row}>
-              <Text>{i}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
-      <DynamicHeader
-        recipe={recipe}
-        scrollOffsetY={scrollOffsetY}
-        onBackPress={() => navigation.goBack()}
-      />
-    </SafeAreaView>
-  );
-}
-
-interface DynamicHeaderProps {
-  recipe: Recipe;
-  scrollOffsetY: Animated.Value;
-  onBackPress: () => void;
-}
-
-function DynamicHeader({ recipe, scrollOffsetY, onBackPress }: DynamicHeaderProps) {
-  const { theme } = useTheme();
-  const styles = makeStyles(theme.colors);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [isBottomSheetVisible, setIsBottomSheetVisible] = React.useState(false);
 
-  const headerHeight = scrollOffsetY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+  const imageExists = React.useMemo(() => recipe.image.trim() !== "", [recipe.image]);
+
+  const yOffset = useRef(new Animated.Value(0)).current;
+
+  const backgroundColor = yOffset.interpolate({
+    inputRange: [0, 400],
+    outputRange: ["rgba(61, 172, 120, 0)", "rgba(61, 172, 120, 1)"],
     extrapolate: "clamp",
   });
 
-  const imageOpacity = scrollOffsetY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.8, 0],
-    extrapolate: "clamp",
-  });
-  const imageTranslate = scrollOffsetY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -50],
-    extrapolate: "clamp",
-  });
-
-  return (
-    <Animated.View style={[styles.header, { height: headerHeight }]}>
-      {isLoading ? (
-        <ActivityIndicator
-          style={styles.backgroundImage}
-          color={theme.colors.secondary}
-          size="large"
-        />
-      ) : null}
-      <Animated.Image
-        style={[
-          styles.backgroundImage,
-          { opacity: imageOpacity, transform: [{ translateY: imageTranslate }] },
-        ]}
-        source={{ uri: recipe.image }}
-        onLoad={() => setIsLoading(false)}
-      />
-      <View style={styles.headerContent}>
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
         <Button
           color={theme.colors.white}
+          buttonStyle={styles.headerButton}
           icon={<Icon name="chevron-left" color={theme.colors.primary} size={30} />}
-          buttonStyle={styles.headerButton}
-          onPress={onBackPress}
+          onPress={() => navigation.goBack()}
         />
+      ),
+      headerRight: () => (
         <Button
           color={theme.colors.white}
-          icon={<Icon name="more-horiz" color={theme.colors.primary} size={30} />}
           buttonStyle={styles.headerButton}
+          icon={<Icon name="more-horiz" color={theme.colors.primary} size={30} />}
           onPress={() => setIsBottomSheetVisible(true)}
         />
-      </View>
+      ),
+    });
+  }, [navigation, styles.headerButton, theme.colors.primary, theme.colors.white]);
+
+  React.useEffect(() => {
+    if (imageExists) {
+      navigation.setOptions({
+        headerBackground: () => (
+          <Animated.View style={{ backgroundColor, ...StyleSheet.absoluteFillObject }} />
+        ),
+        headerTransparent: imageExists,
+      });
+    }
+  }, [backgroundColor, navigation, imageExists, theme.colors.primary]);
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: yOffset } } }], {
+          useNativeDriver: false,
+        })}
+        scrollEventThrottle={16}
+      >
+        {imageExists ? (
+          <Image
+            style={{ height: 400 }}
+            source={{ uri: recipe.image }}
+            PlaceholderContent={
+              <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
+            }
+          />
+        ) : null}
+        <View style={{ padding: 20 }}>
+          <Text style={styles.title}>{recipe.title}</Text>
+          <View style={styles.time}>
+            {recipe.prepTime.trim() != "" ? (
+              <Text style={styles.timeText}>Prep time: {recipe.prepTime}</Text>
+            ) : null}
+            {recipe.cookTime.trim() !== "" ? (
+              <Text style={styles.timeText}>Cook time: {recipe.cookTime}</Text>
+            ) : null}
+          </View>
+          {/* {recipe.servings.trim() !== "" ? <Input typp="numeric" /> : null} */}
+          <Text>{SOME_TEXT}</Text>
+        </View>
+      </ScrollView>
       <BottomSheet
         isVisible={isBottomSheetVisible}
         onBackdropPress={() => setIsBottomSheetVisible(false)}
@@ -131,7 +102,7 @@ function DynamicHeader({ recipe, scrollOffsetY, onBackPress }: DynamicHeaderProp
           </ListItem.Content>
         </ListItem>
       </BottomSheet>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -141,45 +112,12 @@ const makeStyles = (colors: Colors) =>
       flex: 1,
       backgroundColor: colors.secondary,
     },
-    scrollViewContent: {
-      marginTop: HEADER_MAX_HEIGHT,
-    },
-    row: {
-      height: 40,
-      margin: 16,
-      backgroundColor: "#D3D3D3",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    header: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: colors.primary,
-      overflow: "hidden",
-    },
-    headerContent: {
-      marginTop: 60,
-      marginLeft: 10,
-      marginRight: 10,
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "space-between",
-    },
     headerButton: {
       borderRadius: 30,
       padding: 0,
       paddingLeft: 0,
       paddingRight: 0,
-    },
-    backgroundImage: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: HEADER_MAX_HEIGHT,
-      width: null,
+      marginHorizontal: 10,
     },
     bottomSheetOption: {
       display: "flex",
@@ -187,4 +125,91 @@ const makeStyles = (colors: Colors) =>
       justifyContent: "flex-start",
       columnGap: 10,
     },
+    activityIndicator: {
+      backgroundColor: colors.secondary,
+      height: "100%",
+      width: "100%",
+    },
+    title: {
+      fontSize: 30,
+      fontWeight: "500",
+    },
+    time: {
+      display: "flex",
+      flexDirection: "row",
+      columnGap: 30,
+    },
+    timeText: {
+      fontSize: 20,
+      fontWeight: "400",
+      paddingVertical: 10,
+    },
   });
+
+const SOME_TEXT = `The standard Lorem Ipsum passage, used since the 1500s "Lorem ipsum
+dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+ea commodo consequat. Duis aute irure dolor in reprehenderit in
+voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+officia deserunt mollit anim id est laborum." Section 1.10.32 of "de
+Finibus Bonorum et Malorum", written by Cicero in 45 BC "Sed ut
+perspiciatis unde omnis iste natus error sit voluptatem accusantium
+doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo
+inventore veritatis et quasi architecto beatae vitae dicta sunt
+explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur
+aut odit aut fugit, sed quia consequuntur magni dolores eos qui
+ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui
+dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed
+quia non numquam eius modi tempora incidunt ut labore et dolore
+magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis
+nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut
+aliquid ex ea commodi consequatur? Quis autem vel eum iure
+reprehenderit qui in ea voluptate velit esse quam nihil molestiae
+consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla
+pariatur?" 1914 translation by H. Rackham "But I must explain to you
+how all this mistaken idea of denouncing pleasure and praising pain
+was born and I will give you a complete account of the system, and
+expound the actual teachings of the great explorer of the truth, the
+master-builder of human happiness. No one rejects, dislikes, or
+avoids pleasure itself, because it is pleasure, but because those
+who do not know how to pursue pleasure rationally encounter
+consequences that are extremely painful. Nor again is there anyone
+who loves or pursues or desires to obtain pain of itself, because it
+is pain, but because occasionally circumstances occur in which toil
+and pain can procure him some great pleasure. To take a trivial
+example, which of us ever undertakes laborious physical exercise,
+except to obtain some advantage from it? But who has any right to
+find fault with a man who chooses to enjoy a pleasure that has no
+annoying consequences, or one who avoids a pain that produces no
+resultant pleasure?" Section 1.10.33 of "de Finibus Bonorum et
+Malorum", written by Cicero in 45 BC "At vero eos et accusamus et
+iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum
+deleniti atque corrupti quos dolores et quas molestias excepturi
+sint occaecati cupiditate non provident, similique sunt in culpa qui
+officia deserunt mollitia animi, id est laborum et dolorum fuga. Et
+harum quidem rerum facilis est et expedita distinctio. Nam libero
+tempore, cum soluta nobis est eligendi optio cumque nihil impedit
+quo minus id quod maxime placeat facere possimus, omnis voluptas
+assumenda est, omnis dolor repellendus. Temporibus autem quibusdam
+et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et
+voluptates repudiandae sint et molestiae non recusandae. Itaque
+earum rerum hic tenetur a sapiente delectus, ut aut reiciendis
+voluptatibus maiores alias consequatur aut perferendis doloribus
+asperiores repellat." 1914 translation by H. Rackham "On the other
+hand, we denounce with righteous indignation and dislike men who are
+so beguiled and demoralized by the charms of pleasure of the moment,
+so blinded by desire, that they cannot foresee the pain and trouble
+that are bound to ensue; and equal blame belongs to those who fail
+in their duty through weakness of will, which is the same as saying
+through shrinking from toil and pain. These cases are perfectly
+simple and easy to distinguish. In a free hour, when our power of
+choice is untrammelled and when nothing prevents our being able to
+do what we like best, every pleasure is to be welcomed and every
+pain avoided. But in certain circumstances and owing to the claims
+of duty or the obligations of business it will frequently occur that
+pleasures have to be repudiated and annoyances accepted. The wise
+man therefore always holds in these matters to this principle of
+selection: he rejects pleasures to secure other greater pleasures,
+or else he endures pains to avoid worse pains.`;
