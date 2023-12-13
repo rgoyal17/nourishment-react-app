@@ -17,9 +17,7 @@ export function UserStack() {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
-          tabBarStyle: {
-            backgroundColor: primary,
-          },
+          tabBarStyle: { backgroundColor: primary },
           tabBarActiveTintColor: secondary,
           tabBarInactiveTintColor: grey2,
           headerStyle: { backgroundColor: primary },
