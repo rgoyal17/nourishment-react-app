@@ -24,7 +24,6 @@ export function IngredientsAndInstructions({
 
   return (
     <Tab.Navigator
-      style={{ minHeight: "100%" }}
       screenOptions={{
         tabBarStyle: { backgroundColor: primary },
         tabBarIndicatorStyle: { backgroundColor: secondary },
@@ -49,13 +48,11 @@ interface IngredientsTabProps {
 
 function IngredientsTab({ ingredients }: IngredientsTabProps) {
   return (
-    <SafeAreaView style={{ flex: 1, padding: 20 }}>
-      <ScrollView style={{ flex: 1, margin: 100 }}>
-        {ingredients.map((ingredient, index) => (
-          <Text key={index}>{ingredient}</Text>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+    <View>
+      {ingredients.map((ingredient, index) => (
+        <Text key={index}>{ingredient}</Text>
+      ))}
+    </View>
   );
 }
 
@@ -65,10 +62,10 @@ interface InstructionsTabProps {
 
 function InstructionsTab({ instructions }: InstructionsTabProps) {
   return (
-    <ScrollView>
+    <View>
       {instructions.map((instruction, index) => (
         <Text key={index}>{instruction}</Text>
       ))}
-    </ScrollView>
+    </View>
   );
 }
