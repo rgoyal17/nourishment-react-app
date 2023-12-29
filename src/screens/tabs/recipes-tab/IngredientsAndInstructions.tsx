@@ -1,14 +1,6 @@
-import { SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
 import React from "react";
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import { useTheme } from "@rneui/themed";
-
-export type RecipeItemTabStackParamList = {
-  Ingredients: { ingredients: string[] };
-  Instructions: { instructions: string[] };
-};
-
-const Tab = createMaterialTopTabNavigator<RecipeItemTabStackParamList>();
+import { Button, Colors, useTheme } from "@rneui/themed";
 
 interface IngredientsAndInstructionsProps {
   ingredients: string[];
@@ -20,52 +12,49 @@ export function IngredientsAndInstructions({
   instructions,
 }: IngredientsAndInstructionsProps) {
   const { theme } = useTheme();
-  const { primary, secondary, grey2 } = theme.colors;
+  const { primary, secondary } = theme.colors;
+  const styles = makeStyles(theme.colors);
 
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarStyle: { backgroundColor: primary },
-        tabBarIndicatorStyle: { backgroundColor: secondary },
-        tabBarActiveTintColor: secondary,
-        tabBarInactiveTintColor: grey2,
-      }}
-    >
-      <Tab.Screen name="Ingredients">
-        {() => <IngredientsTab ingredients={ingredients} />}
-      </Tab.Screen>
+  const [selectedTab, setSelectedTab] = React.useState(0);
 
-      <Tab.Screen name="Instructions">
-        {() => <InstructionsTab instructions={instructions} />}
-      </Tab.Screen>
-    </Tab.Navigator>
-  );
-}
-
-interface IngredientsTabProps {
-  ingredients: string[];
-}
-
-function IngredientsTab({ ingredients }: IngredientsTabProps) {
   return (
     <View>
-      {ingredients.map((ingredient, index) => (
-        <Text key={index}>{ingredient}</Text>
-      ))}
+      <View style={styles.tabButtons}>
+        <Button
+          containerStyle={styles.tabButton}
+          buttonStyle={{ borderRadius: 0 }}
+          onPress={() => setSelectedTab(0)}
+          color={selectedTab === 0 ? primary : secondary}
+          title="Ingredients"
+          titleStyle={{ color: selectedTab === 0 ? secondary : primary }}
+        />
+        <Button
+          containerStyle={styles.tabButton}
+          buttonStyle={{ borderRadius: 0 }}
+          onPress={() => setSelectedTab(1)}
+          color={selectedTab === 1 ? primary : secondary}
+          title="Instructions"
+          titleStyle={{ color: selectedTab === 1 ? secondary : primary }}
+        />
+      </View>
+      {selectedTab === 0
+        ? ingredients.map((ingredient, index) => <Text key={index}>{ingredient}</Text>)
+        : instructions.map((instruction, index) => <Text key={index}>{instruction}</Text>)}
     </View>
   );
 }
-
-interface InstructionsTabProps {
-  instructions: string[];
-}
-
-function InstructionsTab({ instructions }: InstructionsTabProps) {
-  return (
-    <View>
-      {instructions.map((instruction, index) => (
-        <Text key={index}>{instruction}</Text>
-      ))}
-    </View>
-  );
-}
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    tabButtons: {
+      display: "flex",
+      flexDirection: "row",
+      borderBottomColor: colors.primary,
+      borderBottomWidth: 1,
+    },
+    tabButton: {
+      flex: 1,
+      borderRadius: 0,
+      borderTopLeftRadius: 5,
+      borderTopRightRadius: 5,
+    },
+  });

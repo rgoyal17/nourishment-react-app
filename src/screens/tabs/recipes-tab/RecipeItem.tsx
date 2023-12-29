@@ -66,7 +66,6 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           useNativeDriver: false,
         })}
         scrollEventThrottle={16}
-        contentContainerStyle={{ flex: 1 }}
       >
         {imageExists ? (
           <Image
@@ -103,7 +102,6 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
             </View>
           ) : null}
         </View>
-        <Text>lalalala</Text>
         <IngredientsAndInstructions
           ingredients={recipe.ingredients}
           instructions={recipe.instructions}
