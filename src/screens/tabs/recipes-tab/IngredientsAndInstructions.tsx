@@ -37,9 +37,11 @@ export function IngredientsAndInstructions({
           titleStyle={{ color: selectedTab === 1 ? secondary : primary }}
         />
       </View>
-      {selectedTab === 0
-        ? ingredients.map((ingredient, index) => <Text key={index}>{ingredient}</Text>)
-        : instructions.map((instruction, index) => <Text key={index}>{instruction}</Text>)}
+      <View style={styles.tabContent}>
+        {selectedTab === 0
+          ? ingredients.map((ingredient, index) => <Text key={index}>{ingredient}</Text>)
+          : instructions.map((instruction, index) => <Text key={index}>{instruction}</Text>)}
+      </View>
     </View>
   );
 }
@@ -56,5 +58,9 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 0,
       borderTopLeftRadius: 5,
       borderTopRightRadius: 5,
+    },
+    tabContent: {
+      padding: 20,
+      rowGap: 5,
     },
   });
