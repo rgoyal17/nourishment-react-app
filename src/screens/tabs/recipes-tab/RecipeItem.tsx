@@ -146,6 +146,7 @@ const makeStyles = (colors: Colors) =>
       display: "flex",
       flexDirection: "row",
       justifyContent: "flex-start",
+      alignItems: "center",
       columnGap: 10,
     },
     activityIndicator: {

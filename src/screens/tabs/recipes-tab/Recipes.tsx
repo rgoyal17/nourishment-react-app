@@ -1,7 +1,14 @@
 import { Colors, FAB } from "@rneui/base";
-import { Text, Image, useTheme, Icon } from "@rneui/themed";
+import { Text, Image, useTheme, Icon, BottomSheet, ListItem, Divider } from "@rneui/themed";
 import React from "react";
-import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { StackScreenProps } from "@react-navigation/stack";
 import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
@@ -22,6 +29,9 @@ export function Recipes({ navigation }: RecipesProps) {
   const recipes = useAppSelector(selectAllRecipes);
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isAddBottomSheetVisible, setIsAddBottomSheetVisible] = React.useState(false);
+  const [isImportBottomSheetVisible, setIsImportBottomSheetVisible] = React.useState(false);
+  const [recipeUrl, setRecipeUrl] = React.useState("");
 
   React.useEffect(() => {
     if (user != null) {
@@ -36,6 +46,16 @@ export function Recipes({ navigation }: RecipesProps) {
     }
     setRefreshing(false);
   };
+
+  const handleCreateFromScratch = React.useCallback(() => {
+    setIsAddBottomSheetVisible(false);
+    navigation.navigate("Add Recipe");
+  }, [navigation]);
+
+  const handleImportFromWeb = React.useCallback(() => {
+    setIsAddBottomSheetVisible(false);
+    setIsImportBottomSheetVisible(true);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -77,8 +97,42 @@ export function Recipes({ navigation }: RecipesProps) {
         style={styles.fab}
         icon={{ name: "add", color: theme.colors.secondary }}
         color={theme.colors.primary}
-        onPress={() => navigation.navigate("Add Recipe")}
+        onPress={() => setIsAddBottomSheetVisible(true)}
       />
+
+      <BottomSheet
+        isVisible={isAddBottomSheetVisible}
+        onBackdropPress={() => setIsAddBottomSheetVisible(false)}
+      >
+        <ListItem onPress={handleCreateFromScratch}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="create-outline" type="ionicon" />
+            <ListItem.Title>Create from Scratch</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem containerStyle={{ paddingBottom: 40 }} onPress={handleImportFromWeb}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="download" type="feather" />
+            <ListItem.Title>Import from web</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </BottomSheet>
+
+      <BottomSheet
+        isVisible={isImportBottomSheetVisible}
+        onBackdropPress={() => setIsImportBottomSheetVisible(false)}
+      >
+        <View style={styles.importBottomSheet}>
+          <Text h4>Import Recipe</Text>
+          <Divider />
+          <TextInput
+            style={styles.input}
+            value={recipeUrl}
+            placeholder="Paste recipe URL here"
+            onChangeText={(url) => setRecipeUrl(url)}
+          />
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -125,5 +179,21 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 20,
       height: "100%",
       width: "100%",
+    },
+    bottomSheetOption: {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      alignItems: "center",
+      columnGap: 10,
+    },
+    importBottomSheet: {
+      backgroundColor: colors.white,
+      padding: 20,
+      display: "flex",
+      rowGap: 10,
+    },
+    input: {
+      height: 100,
     },
   });
