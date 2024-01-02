@@ -1,20 +1,15 @@
 import { Colors, FAB } from "@rneui/base";
-import { Text, Image, useTheme, Icon, BottomSheet, ListItem, Divider } from "@rneui/themed";
+import { Text, Image, useTheme, Icon, ListItem, Divider, Button } from "@rneui/themed";
 import React from "react";
-import {
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { StackScreenProps } from "@react-navigation/stack";
 import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { ActivityIndicator } from "react-native";
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import { v4 as uuidv4 } from "uuid";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
@@ -29,8 +24,14 @@ export function Recipes({ navigation }: RecipesProps) {
   const recipes = useAppSelector(selectAllRecipes);
 
   const [refreshing, setRefreshing] = React.useState(false);
-  const [isAddBottomSheetVisible, setIsAddBottomSheetVisible] = React.useState(false);
-  const [isImportBottomSheetVisible, setIsImportBottomSheetVisible] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const addSnapPoints = React.useMemo(() => ["20%"], []);
+
+  const importBottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const importSnapPoints = React.useMemo(() => ["30%", "70%"], []);
+
   const [recipeUrl, setRecipeUrl] = React.useState("");
 
   React.useEffect(() => {
@@ -48,14 +49,43 @@ export function Recipes({ navigation }: RecipesProps) {
   };
 
   const handleCreateFromScratch = React.useCallback(() => {
-    setIsAddBottomSheetVisible(false);
-    navigation.navigate("Add Recipe");
+    addBottomSheetRef.current?.dismiss();
+    navigation.navigate("Add Recipe", {});
   }, [navigation]);
 
   const handleImportFromWeb = React.useCallback(() => {
-    setIsAddBottomSheetVisible(false);
-    setIsImportBottomSheetVisible(true);
+    addBottomSheetRef.current?.dismiss();
+    importBottomSheetRef.current?.present();
   }, []);
+
+  const handleImportClick = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `https://nourishment-3c750.uc.r.appspot.com/getRecipe/${recipeUrl}`,
+      );
+      const recipe = await response.json();
+      importBottomSheetRef.current?.dismiss();
+      setRecipeUrl("");
+      navigation.navigate("Add Recipe", {
+        recipe: {
+          id: uuidv4(),
+          title: recipe.title ?? "",
+          image: recipe.image ?? "",
+          autoGenerate: false,
+          servings: recipe.yields?.charAt(0) ?? "",
+          ingredients: recipe.ingredients ?? [],
+          instructions: recipe.instructions_list ?? [],
+          cookTime: recipe.total_time ?? "",
+          prepTime: "",
+        },
+      });
+    } catch {
+      alert("Failed to import recipe");
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation, recipeUrl]);
 
   return (
     <View style={styles.container}>
@@ -93,16 +123,20 @@ export function Recipes({ navigation }: RecipesProps) {
         keyExtractor={(_, index) => `${index}`}
         refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
       />
+
       <FAB
         style={styles.fab}
         icon={{ name: "add", color: theme.colors.secondary }}
         color={theme.colors.primary}
-        onPress={() => setIsAddBottomSheetVisible(true)}
+        onPress={() => addBottomSheetRef.current?.present()}
       />
-
-      <BottomSheet
-        isVisible={isAddBottomSheetVisible}
-        onBackdropPress={() => setIsAddBottomSheetVisible(false)}
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={addBottomSheetRef}
+        snapPoints={addSnapPoints}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
       >
         <ListItem onPress={handleCreateFromScratch}>
           <ListItem.Content style={styles.bottomSheetOption}>
@@ -110,29 +144,41 @@ export function Recipes({ navigation }: RecipesProps) {
             <ListItem.Title>Create from Scratch</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-        <ListItem containerStyle={{ paddingBottom: 40 }} onPress={handleImportFromWeb}>
+        <ListItem onPress={handleImportFromWeb}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="download" type="feather" />
             <ListItem.Title>Import from web</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-      </BottomSheet>
+      </BottomSheetModal>
 
-      <BottomSheet
-        isVisible={isImportBottomSheetVisible}
-        onBackdropPress={() => setIsImportBottomSheetVisible(false)}
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={importBottomSheetRef}
+        snapPoints={importSnapPoints}
+        keyboardBehavior="extend"
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
       >
         <View style={styles.importBottomSheet}>
-          <Text h4>Import Recipe</Text>
+          <Text style={{ alignSelf: "center" }} h4>
+            Import Recipe
+          </Text>
           <Divider />
-          <TextInput
-            style={styles.input}
+          <BottomSheetTextInput
             value={recipeUrl}
             placeholder="Paste recipe URL here"
             onChangeText={(url) => setRecipeUrl(url)}
           />
+          <Button
+            title="Import"
+            disabled={recipeUrl === ""}
+            onPress={handleImportClick}
+            loading={loading}
+          />
         </View>
-      </BottomSheet>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -191,9 +237,6 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.white,
       padding: 20,
       display: "flex",
-      rowGap: 10,
-    },
-    input: {
-      height: 100,
+      rowGap: 20,
     },
   });

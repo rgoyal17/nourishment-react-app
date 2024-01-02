@@ -8,7 +8,7 @@ import { Icon } from "@rneui/base";
 import { Recipe } from "../../../redux/recipesSlice";
 
 export type RecipesTabStackParamList = {
-  "Add Recipe": undefined;
+  "Add Recipe": { recipe?: Recipe };
   RecipeItem: { recipe: Recipe };
   Recipes: undefined;
 };

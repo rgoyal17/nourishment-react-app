@@ -2,9 +2,10 @@ import { StackScreenProps } from "@react-navigation/stack";
 import React, { useRef } from "react";
 import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Colors, useTheme, Image, Button, Icon, BottomSheet, ListItem } from "@rneui/themed";
+import { Colors, useTheme, Image, Button, Icon, ListItem } from "@rneui/themed";
 import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -12,7 +13,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { recipe } = route.params;
-  const [isBottomSheetVisible, setIsBottomSheetVisible] = React.useState(false);
+  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
   const [servings, setServings] = React.useState(
     recipe.servings !== "" ? Number(recipe.servings) : undefined,
   );
@@ -42,7 +43,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           color={theme.colors.secondary}
           buttonStyle={styles.headerButton}
           icon={<Icon name="more-horiz" color={theme.colors.primary} size={30} />}
-          onPress={() => setIsBottomSheetVisible(true)}
+          onPress={() => bottomSheetRef.current?.present()}
         />
       ),
     });
@@ -108,23 +109,20 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
         />
       </ScrollView>
 
-      <BottomSheet
-        isVisible={isBottomSheetVisible}
-        onBackdropPress={() => setIsBottomSheetVisible(false)}
-      >
+      <BottomSheetModal enablePanDownToClose ref={bottomSheetRef} snapPoints={["20%"]}>
         <ListItem>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="edit" />
             <ListItem.Title>Edit</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-        <ListItem containerStyle={{ paddingBottom: 40 }}>
+        <ListItem>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="delete" />
             <ListItem.Title>Delete</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-      </BottomSheet>
+      </BottomSheetModal>
     </View>
   );
 }

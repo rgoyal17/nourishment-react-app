@@ -37,18 +37,19 @@ const INITIAL_VALIDATION_ERRORS: ValidationErrors = {
 
 type AddRecipeProps = StackScreenProps<RecipesTabStackParamList, "Add Recipe">;
 
-export function AddRecipe({ navigation }: AddRecipeProps) {
+export function AddRecipe({ navigation, route }: AddRecipeProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
+  const { recipe: recipeFromParent } = route.params;
 
   const openai = new OpenAI({
     apiKey: Constants.expoConfig?.extra?.openAiKey,
   });
   const [recipe, setRecipe] = React.useReducer(
     (prev: Recipe, next: Partial<Recipe>) => ({ ...prev, ...next }),
-    INITIAL_RECIPE,
+    recipeFromParent ?? INITIAL_RECIPE,
   );
 
   const [isLoadingImage, setIsLoadingImage] = React.useState(false);
