@@ -69,7 +69,7 @@ export function LoginScreen() {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require("../../assets/background.png")}
+        source={require("../../../assets/background.png")}
         resizeMode="cover"
         style={styles.image}
       >

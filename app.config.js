@@ -2,7 +2,7 @@ import "dotenv/config";
 
 export default {
   expo: {
-    name: "nourishment",
+    name: "NourishMent",
     slug: "nourishment",
     version: "1.0.0",
     orientation: "portrait",
@@ -16,10 +16,11 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "com.rgoyal.nourishment",
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/background.png",
         backgroundColor: "#ffffff",
       },
     },
@@ -36,6 +37,10 @@ export default {
       firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID,
 
       openAiKey: process.env.OPEN_AI_KEY,
+
+      eas: {
+        projectId: "4c4f8aa6-6d7a-44a7-833e-d5fc6f60dcbf",
+      },
     },
   },
 };
