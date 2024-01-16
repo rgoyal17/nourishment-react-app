@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.9.3"
+    "version": ">= 5.9.3",
+    "promptToConfigurePushNotifications": false
   },
   "build": {
     "development": {
@@ -27,6 +28,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "rishabhgoyal555@gmail.com",
+        "ascAppId": "6475539297",
+        "appleTeamId": "2L6J9A3Q29"
+      }
+    }
   }
 }
