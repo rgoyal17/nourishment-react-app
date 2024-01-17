@@ -50,7 +50,7 @@ export function Recipes({ navigation }: RecipesProps) {
 
   const handleCreateFromScratch = React.useCallback(() => {
     addBottomSheetRef.current?.dismiss();
-    navigation.navigate("Add Recipe", {});
+    navigation.navigate("Add Recipe", { source: "scratch" });
   }, [navigation]);
 
   const handleImportFromWeb = React.useCallback(() => {
@@ -78,6 +78,7 @@ export function Recipes({ navigation }: RecipesProps) {
           cookTime: "",
           prepTime: "",
         },
+        source: "import",
       });
     } catch {
       alert("Failed to import recipe");

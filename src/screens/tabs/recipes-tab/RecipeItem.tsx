@@ -13,7 +13,7 @@ import { RecipesTabStackParamList } from "./RecipesTab";
 import { Colors, useTheme, Image, Button, Icon, ListItem } from "@rneui/themed";
 import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useAppDispatch } from "../../../redux/hooks";
 import { deleteRecipe } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
@@ -91,6 +91,11 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     }
   }, [dispatch, navigation, recipe.id, user?.uid]);
 
+  const handleEditRecipe = React.useCallback(() => {
+    bottomSheetRef.current?.dismiss();
+    navigation.navigate("Add Recipe", { recipe, source: "edit" });
+  }, [navigation, recipe]);
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -140,8 +145,15 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
         />
       </ScrollView>
 
-      <BottomSheetModal enablePanDownToClose ref={bottomSheetRef} snapPoints={["20%"]}>
-        <ListItem>
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={bottomSheetRef}
+        snapPoints={["20%"]}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
+      >
+        <ListItem onPress={handleEditRecipe}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="edit" />
             <ListItem.Title>Edit</ListItem.Title>

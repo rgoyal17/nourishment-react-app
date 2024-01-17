@@ -8,7 +8,7 @@ import { AddImage } from "./AddImage";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
-import { Recipe, addNewRecipe } from "../../../redux/recipesSlice";
+import { Recipe, addNewRecipe, editRecipe } from "../../../redux/recipesSlice";
 import { useAppDispatch } from "../../../redux/hooks";
 
 export const INITIAL_RECIPE: Recipe = {
@@ -34,14 +34,14 @@ const INITIAL_VALIDATION_ERRORS: ValidationErrors = {
   isInstructionsEmpty: false,
 };
 
-type AddRecipeProps = StackScreenProps<RecipesTabStackParamList, "Add Recipe">;
+type AddOrEditRecipeProps = StackScreenProps<RecipesTabStackParamList, "Add Recipe">;
 
-export function AddRecipe({ navigation, route }: AddRecipeProps) {
+export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
-  const { recipe: recipeFromParent } = route.params;
+  const { recipe: recipeFromParent, source } = route.params;
 
   const openai = new OpenAI({
     apiKey: Constants.expoConfig?.extra?.openAiKey,
@@ -51,10 +51,9 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
     recipeFromParent ?? INITIAL_RECIPE,
   );
 
-  const isCreatingFromScratch = recipeFromParent == null;
-
-  const [shouldAutoGenerateImage, setShouldAutoGenerateImage] =
-    React.useState(isCreatingFromScratch);
+  const [shouldAutoGenerateImage, setShouldAutoGenerateImage] = React.useState(
+    source === "scratch",
+  );
 
   const [isLoadingImage, setIsLoadingImage] = React.useState(false);
   const [isAddingRecipe, setIsAddingRecipe] = React.useState(false);
@@ -75,7 +74,7 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
     return !isTitleEmpty && !isIngredientsEmpty && !isInstructionsEmpty;
   }, [recipe]);
 
-  const addRecipe = React.useCallback(async () => {
+  const handleAddOrEditRecipe = React.useCallback(async () => {
     if (user?.uid == null) {
       Alert.alert("Please sign in to add a recipe");
       return;
@@ -86,20 +85,27 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
     }
     try {
       setIsAddingRecipe(true);
-      await dispatch(addNewRecipe({ userId: user.uid, recipe }));
+      if (source === "edit") {
+        await dispatch(editRecipe({ userId: user.uid, recipe }));
+      } else {
+        await dispatch(addNewRecipe({ userId: user.uid, recipe }));
+      }
       navigation.navigate("Recipes");
     } catch (e) {
       Alert.alert("Failed to add recipe");
     } finally {
       setIsAddingRecipe(false);
     }
-  }, [user?.uid, isFormValid, dispatch, recipe, navigation]);
+  }, [user?.uid, isFormValid, source, navigation, dispatch, recipe]);
 
   React.useEffect(() => {
     navigation.setOptions({
-      headerRight: () => <Button onPress={addRecipe} title="Done" loading={isAddingRecipe} />,
+      headerRight: () => (
+        <Button onPress={handleAddOrEditRecipe} title="Done" loading={isAddingRecipe} />
+      ),
+      headerTitle: source === "edit" ? "Edit Recipe" : "Add Recipe",
     });
-  }, [navigation, addRecipe, isAddingRecipe]);
+  }, [navigation, handleAddOrEditRecipe, isAddingRecipe, source]);
 
   const generateImage = async () => {
     if (!shouldAutoGenerateImage || recipe.title.trim() === "") {
@@ -139,7 +145,7 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
       {validationErrors.isTitleEmpty ? (
         <Text style={styles.error}>Title cannot be empty</Text>
       ) : null}
-      {isCreatingFromScratch ? (
+      {source === "scratch" ? (
         <CheckBox
           containerStyle={styles.checkBox}
           title="AI generate my recipe image"

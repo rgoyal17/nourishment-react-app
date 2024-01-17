@@ -74,6 +74,21 @@ export const deleteRecipe = createAsyncThunk(
   },
 );
 
+interface EditRecipeParams {
+  userId: string;
+  recipe: Recipe;
+}
+
+export const editRecipe = createAsyncThunk(
+  "recipes/editRecipe",
+  async ({ userId, recipe }: EditRecipeParams) => {
+    const db = getFirestore();
+    const recipeDoc = doc(db, `users/${userId}/recipes/${recipe.id}`);
+    await setDoc(recipeDoc, { ...recipe });
+    return recipe;
+  },
+);
+
 const recipesSlice = createSlice({
   name: "recipes",
   initialState,
@@ -83,6 +98,9 @@ const recipesSlice = createSlice({
     builder.addCase(addNewRecipe.fulfilled, (state, action) => [action.payload, ...state]);
     builder.addCase(deleteRecipe.fulfilled, (state, action) => [
       ...state.filter((recipe) => recipe.id !== action.payload),
+    ]);
+    builder.addCase(editRecipe.fulfilled, (state, action) => [
+      ...state.map((recipe) => (recipe.id === action.payload.id ? action.payload : recipe)),
     ]);
   },
 });
