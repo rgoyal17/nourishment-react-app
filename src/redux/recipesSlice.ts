@@ -1,19 +1,28 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import { ref, getDownloadURL, getStorage, uploadBytesResumable } from "firebase/storage";
-import { getFirestore, setDoc, doc, query, collection, getDocs, orderBy } from "firebase/firestore";
+import {
+  getFirestore,
+  setDoc,
+  doc,
+  query,
+  collection,
+  getDocs,
+  orderBy,
+  deleteDoc,
+} from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 
 export interface Recipe {
   id: string;
   title: string;
   image: string;
-  autoGenerate: boolean;
   servings: string;
   ingredients: string[];
   instructions: string[];
   cookTime: string;
   prepTime: string;
+  totalTime: string;
 }
 
 const initialState: Recipe[] = [];
@@ -27,16 +36,17 @@ export const fetchRecipes = createAsyncThunk("recipes/fetchRecipes", async (user
   return recipes;
 });
 
-export interface AddNewRecipeParams {
+interface AddNewRecipeParams {
   userId: string;
   recipe: Recipe;
 }
 
 export const addNewRecipe = createAsyncThunk(
   "recipes/addNewRecipe",
-  async (params: AddNewRecipeParams) => {
-    const { userId, recipe } = params;
+  async ({ userId, recipe }: AddNewRecipeParams) => {
     const id = uuidv4();
+    const totalTime = +recipe.prepTime + +recipe.cookTime;
+    const stringTotalTime = totalTime === 0 ? "" : totalTime.toString();
 
     let image = "";
     if (recipe.image !== "") {
@@ -45,10 +55,25 @@ export const addNewRecipe = createAsyncThunk(
 
     const db = getFirestore();
     const recipeDoc = doc(db, `users/${userId}/recipes/${id}`);
-    const updatedRecipe = { ...recipe, id, image };
+    const updatedRecipe = { ...recipe, id, image, totalTime: stringTotalTime || recipe.totalTime };
     await setDoc(recipeDoc, { ...updatedRecipe });
 
     return recipe;
+  },
+);
+
+interface DeleteRecipeParams {
+  userId: string;
+  recipeId: string;
+}
+
+export const deleteRecipe = createAsyncThunk(
+  "recipes/deleteRecipe",
+  async ({ userId, recipeId }: DeleteRecipeParams) => {
+    const db = getFirestore();
+    const recipeDoc = doc(db, `users/${userId}/recipes/${recipeId}`);
+    await deleteDoc(recipeDoc);
+    return recipeId;
   },
 );
 
@@ -58,7 +83,10 @@ const recipesSlice = createSlice({
   reducers: {},
   extraReducers(builder) {
     builder.addCase(fetchRecipes.fulfilled, (_, action) => action.payload);
-    builder.addCase(addNewRecipe.fulfilled, (state, action) => [...state, action.payload]);
+    builder.addCase(addNewRecipe.fulfilled, (state, action) => [action.payload, ...state]);
+    builder.addCase(deleteRecipe.fulfilled, (state, action) => [
+      ...state.filter((recipe) => recipe.id !== action.payload),
+    ]);
   },
 });
 

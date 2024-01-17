@@ -1,11 +1,22 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React, { useRef } from "react";
-import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { Colors, useTheme, Image, Button, Icon, ListItem } from "@rneui/themed";
 import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { useAppDispatch } from "../../../redux/hooks";
+import { deleteRecipe } from "../../../redux/recipesSlice";
+import { useAuthentication } from "../../../hooks/useAuthentication";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -13,10 +24,13 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { recipe } = route.params;
+  const dispatch = useAppDispatch();
+  const { user } = useAuthentication();
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
   const [servings, setServings] = React.useState(
     recipe.servings !== "" ? Number(recipe.servings) : undefined,
   );
+  const [isDeletingRecipe, setIsDeletingRecipe] = React.useState(false);
 
   const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
 
@@ -60,6 +74,23 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     }
   }, [backgroundColor, navigation, imageExists, theme.colors.primary]);
 
+  const handleDeleteRecipe = React.useCallback(async () => {
+    if (user?.uid == null) {
+      Alert.alert("Please sign in to delete a recipe");
+      return;
+    }
+    try {
+      setIsDeletingRecipe(true);
+      await dispatch(deleteRecipe({ userId: user.uid, recipeId: recipe.id }));
+      navigation.navigate("Recipes");
+      bottomSheetRef.current?.dismiss();
+    } catch (e) {
+      Alert.alert("Failed to delete recipe");
+    } finally {
+      setIsDeletingRecipe(false);
+    }
+  }, [dispatch, navigation, recipe.id, user?.uid]);
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -79,13 +110,16 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
         ) : null}
         <View style={styles.content}>
           <Text style={styles.title}>{recipe.title}</Text>
-          {recipe.prepTime !== "" || recipe.cookTime !== "" ? (
+          {recipe.prepTime !== "" || recipe.cookTime !== "" || recipe.totalTime !== "" ? (
             <View style={styles.time}>
               {recipe.prepTime != "" ? (
                 <Text style={styles.timeText}>Prep time: {recipe.prepTime} mins</Text>
               ) : null}
               {recipe.cookTime !== "" ? (
                 <Text style={styles.timeText}>Cook time: {recipe.cookTime} mins</Text>
+              ) : null}
+              {recipe.totalTime !== "" && recipe.cookTime === "" && recipe.prepTime === "" ? (
+                <Text style={styles.timeText}>Total time: {recipe.totalTime} mins</Text>
               ) : null}
             </View>
           ) : null}
@@ -116,10 +150,10 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
             <ListItem.Title>Edit</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-        <ListItem>
+        <ListItem onPress={handleDeleteRecipe}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="delete" />
-            <ListItem.Title>Delete</ListItem.Title>
+            <ListItem.Title>{isDeletingRecipe ? "Deleting..." : "Delete"}</ListItem.Title>
           </ListItem.Content>
         </ListItem>
       </BottomSheetModal>
@@ -162,12 +196,14 @@ const makeStyles = (colors: Colors) =>
       fontWeight: "500",
     },
     time: {
-      display: "flex",
+      flex: 1,
       flexDirection: "row",
+      flexWrap: "wrap",
       columnGap: 20,
+      rowGap: 10,
     },
     timeText: {
-      fontSize: 20,
+      fontSize: 18,
       fontWeight: "400",
     },
     servings: {

@@ -72,12 +72,12 @@ export function Recipes({ navigation }: RecipesProps) {
           id: uuidv4(),
           title: recipe.title ?? "",
           image: recipe.image ?? "",
-          autoGenerate: false,
           servings: recipe.yields?.charAt(0) ?? "",
           ingredients: recipe.ingredients ?? [],
           instructions: recipe.instructions_list ?? [],
-          cookTime: recipe.total_time ?? "",
+          cookTime: "",
           prepTime: "",
+          totalTime: recipe.total_time?.toString() ?? "",
         },
       });
     } catch {

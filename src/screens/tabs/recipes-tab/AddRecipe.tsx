@@ -15,12 +15,12 @@ export const INITIAL_RECIPE: Recipe = {
   id: "",
   title: "",
   image: "",
-  autoGenerate: true,
   servings: "2",
   ingredients: [],
   instructions: [],
   cookTime: "",
   prepTime: "",
+  totalTime: "",
 };
 
 interface ValidationErrors {
@@ -51,6 +51,11 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
     (prev: Recipe, next: Partial<Recipe>) => ({ ...prev, ...next }),
     recipeFromParent ?? INITIAL_RECIPE,
   );
+
+  const isCreatingFromScratch = recipeFromParent == null;
+
+  const [shouldAutoGenerateImage, setShouldAutoGenerateImage] =
+    React.useState(isCreatingFromScratch);
 
   const [isLoadingImage, setIsLoadingImage] = React.useState(false);
   const [isAddingRecipe, setIsAddingRecipe] = React.useState(false);
@@ -98,7 +103,7 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
   }, [navigation, addRecipe, isAddingRecipe]);
 
   const generateImage = async () => {
-    if (!recipe.autoGenerate || recipe.title.trim() === "") {
+    if (!shouldAutoGenerateImage || recipe.title.trim() === "") {
       return;
     }
     try {
@@ -135,13 +140,15 @@ export function AddRecipe({ navigation, route }: AddRecipeProps) {
       {validationErrors.isTitleEmpty ? (
         <Text style={styles.error}>Title cannot be empty</Text>
       ) : null}
-      <CheckBox
-        containerStyle={styles.checkBox}
-        title="AI generate my recipe"
-        checked={recipe.autoGenerate}
-        uncheckedColor={theme.colors.primary}
-        onPress={() => setRecipe({ autoGenerate: !recipe.autoGenerate })}
-      />
+      {isCreatingFromScratch ? (
+        <CheckBox
+          containerStyle={styles.checkBox}
+          title="AI generate my recipe image"
+          checked={shouldAutoGenerateImage}
+          uncheckedColor={theme.colors.primary}
+          onPress={() => setShouldAutoGenerateImage((prevAutoGen) => !prevAutoGen)}
+        />
+      ) : null}
       <Text style={styles.title}>Image</Text>
       <AddImage
         image={recipe.image}
