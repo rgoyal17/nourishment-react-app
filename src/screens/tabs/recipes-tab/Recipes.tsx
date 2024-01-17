@@ -77,7 +77,6 @@ export function Recipes({ navigation }: RecipesProps) {
           instructions: recipe.instructions_list ?? [],
           cookTime: "",
           prepTime: "",
-          totalTime: recipe.total_time?.toString() ?? "",
         },
       });
     } catch {

@@ -22,7 +22,6 @@ export interface Recipe {
   instructions: string[];
   cookTime: string;
   prepTime: string;
-  totalTime: string;
 }
 
 const initialState: Recipe[] = [];
@@ -45,8 +44,6 @@ export const addNewRecipe = createAsyncThunk(
   "recipes/addNewRecipe",
   async ({ userId, recipe }: AddNewRecipeParams) => {
     const id = uuidv4();
-    const totalTime = +recipe.prepTime + +recipe.cookTime;
-    const stringTotalTime = totalTime === 0 ? "" : totalTime.toString();
 
     let image = "";
     if (recipe.image !== "") {
@@ -55,7 +52,7 @@ export const addNewRecipe = createAsyncThunk(
 
     const db = getFirestore();
     const recipeDoc = doc(db, `users/${userId}/recipes/${id}`);
-    const updatedRecipe = { ...recipe, id, image, totalTime: stringTotalTime || recipe.totalTime };
+    const updatedRecipe = { ...recipe, id, image };
     await setDoc(recipeDoc, { ...updatedRecipe });
 
     return recipe;

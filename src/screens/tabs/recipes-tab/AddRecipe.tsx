@@ -20,7 +20,6 @@ export const INITIAL_RECIPE: Recipe = {
   instructions: [],
   cookTime: "",
   prepTime: "",
-  totalTime: "",
 };
 
 interface ValidationErrors {

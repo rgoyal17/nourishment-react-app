@@ -110,16 +110,13 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
         ) : null}
         <View style={styles.content}>
           <Text style={styles.title}>{recipe.title}</Text>
-          {recipe.prepTime !== "" || recipe.cookTime !== "" || recipe.totalTime !== "" ? (
+          {recipe.prepTime !== "" || recipe.cookTime !== "" ? (
             <View style={styles.time}>
               {recipe.prepTime != "" ? (
                 <Text style={styles.timeText}>Prep time: {recipe.prepTime} mins</Text>
               ) : null}
               {recipe.cookTime !== "" ? (
                 <Text style={styles.timeText}>Cook time: {recipe.cookTime} mins</Text>
-              ) : null}
-              {recipe.totalTime !== "" && recipe.cookTime === "" && recipe.prepTime === "" ? (
-                <Text style={styles.timeText}>Total time: {recipe.totalTime} mins</Text>
               ) : null}
             </View>
           ) : null}
