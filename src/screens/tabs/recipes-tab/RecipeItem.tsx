@@ -1,16 +1,8 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React, { useRef } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Colors, useTheme, Image, Button, Icon, ListItem } from "@rneui/themed";
+import { Colors, useTheme, Button, Icon, ListItem } from "@rneui/themed";
 import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -105,12 +97,28 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
         scrollEventThrottle={16}
       >
         {imageExists ? (
-          <Image
-            style={{ height: 400 }}
+          <Animated.Image
+            resizeMode="cover"
+            style={{
+              height: 400,
+              transform: [
+                {
+                  translateY: yOffset.interpolate({
+                    inputRange: [-3000, 0],
+                    outputRange: [-2000, 0],
+                    extrapolate: "clamp",
+                  }),
+                },
+                {
+                  scale: yOffset.interpolate({
+                    inputRange: [-3000, 0],
+                    outputRange: [10, 1],
+                    extrapolate: "clamp",
+                  }),
+                },
+              ],
+            }}
             source={{ uri: recipe.image }}
-            PlaceholderContent={
-              <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
-            }
           />
         ) : null}
         <View style={styles.content}>
