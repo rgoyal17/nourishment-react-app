@@ -29,6 +29,7 @@ export interface Recipe {
   instructions: string[];
   cookTime: string;
   prepTime: string;
+  websiteUrl?: string;
 }
 
 const initialState: Recipe[] = [];
@@ -102,13 +103,6 @@ const recipesSlice = createSlice({
   reducers: {},
   extraReducers(builder) {
     builder.addCase(fetchRecipes.fulfilled, (_, action) => action.payload);
-    builder.addCase(addNewRecipe.fulfilled, (state, action) => [action.payload, ...state]);
-    builder.addCase(deleteRecipe.fulfilled, (state, action) => [
-      ...state.filter((recipe) => recipe.id !== action.payload),
-    ]);
-    builder.addCase(editRecipe.fulfilled, (state, action) => [
-      ...state.map((recipe) => (recipe.id === action.payload.id ? action.payload : recipe)),
-    ]);
   },
 });
 

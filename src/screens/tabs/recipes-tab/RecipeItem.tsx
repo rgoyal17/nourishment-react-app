@@ -15,7 +15,7 @@ import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useAppDispatch } from "../../../redux/hooks";
-import { deleteRecipe } from "../../../redux/recipesSlice";
+import { deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
@@ -82,6 +82,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     try {
       setIsDeletingRecipe(true);
       await dispatch(deleteRecipe({ userId: user.uid, recipeId: recipe.id }));
+      await dispatch(fetchRecipes(user.uid));
       navigation.navigate("Recipes");
       bottomSheetRef.current?.dismiss();
     } catch (e) {

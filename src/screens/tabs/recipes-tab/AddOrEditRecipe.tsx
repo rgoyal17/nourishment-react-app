@@ -8,7 +8,13 @@ import { AddImage } from "./AddImage";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
-import { Ingredient, Recipe, addNewRecipe, editRecipe } from "../../../redux/recipesSlice";
+import {
+  Ingredient,
+  Recipe,
+  addNewRecipe,
+  editRecipe,
+  fetchRecipes,
+} from "../../../redux/recipesSlice";
 import { useAppDispatch } from "../../../redux/hooks";
 
 export const INITIAL_RECIPE: Recipe = {
@@ -139,6 +145,7 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
       } else {
         await dispatch(addNewRecipe({ userId: user.uid, recipe: updatedRecipe }));
       }
+      await dispatch(fetchRecipes(user.uid));
       navigation.navigate("Recipes");
     } catch (e) {
       Alert.alert("Failed to add recipe");
