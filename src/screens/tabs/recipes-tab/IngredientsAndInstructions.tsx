@@ -1,9 +1,10 @@
 import { Text, View, StyleSheet } from "react-native";
 import React from "react";
 import { Button, Colors, useTheme } from "@rneui/themed";
+import { Ingredient } from "../../../redux/recipesSlice";
 
 interface IngredientsAndInstructionsProps {
-  ingredients: string[];
+  ingredients: Ingredient[];
   instructions: string[];
 }
 
@@ -41,7 +42,10 @@ export function IngredientsAndInstructions({
         {selectedTab === 0
           ? ingredients.map((ingredient, index) => (
               <View style={styles.ingredientContainer} key={index}>
-                <Text style={styles.ingredient}>{ingredient}</Text>
+                <Text style={styles.ingredient}>{ingredient.item}</Text>
+                <Text style={styles.rightText}>
+                  {ingredient.quantity} {ingredient.unit}
+                </Text>
               </View>
             ))
           : instructions.map((instruction, index) => (
@@ -73,10 +77,14 @@ const makeStyles = (colors: Colors) =>
       paddingVertical: 15,
       borderBottomColor: colors.primary,
       borderBottomWidth: 0.2,
+      flexDirection: "row",
     },
     ingredient: {
       fontSize: 15,
       flex: 1,
+    },
+    rightText: {
+      color: colors.grey2,
     },
     instructionContainer: {
       flexDirection: "row",

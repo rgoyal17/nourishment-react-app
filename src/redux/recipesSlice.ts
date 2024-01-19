@@ -13,12 +13,19 @@ import {
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 
+export interface Ingredient {
+  item: string;
+  quantity: string;
+  unit: string;
+}
+
 export interface Recipe {
   id: string;
   title: string;
   image: string;
   servings: string;
-  ingredients: string[];
+  ingredientsParsed: Ingredient[];
+  ingredientsRaw: string[];
   instructions: string[];
   cookTime: string;
   prepTime: string;

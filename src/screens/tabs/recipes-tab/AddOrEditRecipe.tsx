@@ -8,7 +8,7 @@ import { AddImage } from "./AddImage";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
-import { Recipe, addNewRecipe, editRecipe } from "../../../redux/recipesSlice";
+import { Ingredient, Recipe, addNewRecipe, editRecipe } from "../../../redux/recipesSlice";
 import { useAppDispatch } from "../../../redux/hooks";
 
 export const INITIAL_RECIPE: Recipe = {
@@ -16,7 +16,8 @@ export const INITIAL_RECIPE: Recipe = {
   title: "",
   image: "",
   servings: "2",
-  ingredients: [],
+  ingredientsParsed: [],
+  ingredientsRaw: [],
   instructions: [],
   cookTime: "",
   prepTime: "",
@@ -64,15 +65,56 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
   );
 
   const isFormValid = React.useCallback(() => {
-    const { title, ingredients, instructions } = recipe;
+    const { title, instructions, ingredientsRaw } = recipe;
     const isTitleEmpty = title.trim().length === 0;
-    const isIngredientsEmpty = ingredients.length === 0;
+    const isIngredientsEmpty = ingredientsRaw.length === 0;
     const isInstructionsEmpty = instructions.length === 0;
     setValidationErrors({ isTitleEmpty });
     setValidationErrors({ isIngredientsEmpty });
     setValidationErrors({ isInstructionsEmpty });
     return !isTitleEmpty && !isIngredientsEmpty && !isInstructionsEmpty;
   }, [recipe]);
+
+  const getIngredientsAiInput = React.useCallback(() => {
+    let ingredientsString = "[";
+    recipe.ingredientsRaw.forEach((ingredient, index) => {
+      ingredientsString += `{${ingredient}}`;
+      if (index !== recipe.ingredientsRaw.length - 1) {
+        ingredientsString += ", ";
+      }
+    });
+    return (ingredientsString += "]");
+  }, [recipe.ingredientsRaw]);
+
+  const getAiParsedIngredients = React.useCallback(async () => {
+    if (
+      recipe.ingredientsParsed.length !== 0 &&
+      recipeFromParent?.ingredientsRaw === recipe.ingredientsRaw
+    ) {
+      return recipe.ingredientsParsed;
+    }
+
+    const response = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You will be given a list of ingredient objects separated by a comma. Each ingredient might contain the item name, a quantity, and a unit of measurement. Your output format should be a JSON containing all ingredients of format { item: string, quantity: string, unit: string }. Use empty string when a value is not present. For example if you are given [{1kg potatoes}, {3 onions}], you should return {ingredients: [{item: 'potatoes', quantity: `1`, unit: 'kg'}, {item: 'onions', quantity: '3', unit: ''}]}",
+        },
+        { role: "user", content: getIngredientsAiInput() },
+      ],
+      response_format: { type: "json_object" },
+      model: "gpt-4-1106-preview",
+    });
+    const content = response.choices[0].message.content;
+    return content == null ? null : (JSON.parse(content).ingredients as Ingredient[]);
+  }, [
+    getIngredientsAiInput,
+    openai.chat.completions,
+    recipe.ingredientsParsed,
+    recipe.ingredientsRaw,
+    recipeFromParent?.ingredientsRaw,
+  ]);
 
   const handleAddOrEditRecipe = React.useCallback(async () => {
     if (user?.uid == null) {
@@ -85,10 +127,17 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     }
     try {
       setIsAddingRecipe(true);
+      const aiParsedIngredients = await getAiParsedIngredients();
+      if (aiParsedIngredients == null) {
+        throw new Error("Failed to parse ingredients");
+      }
+      const updatedRecipe: Recipe = { ...recipe, ingredientsParsed: aiParsedIngredients };
+      setRecipe({ ingredientsParsed: aiParsedIngredients });
+
       if (source === "edit") {
-        await dispatch(editRecipe({ userId: user.uid, recipe }));
+        await dispatch(editRecipe({ userId: user.uid, recipe: updatedRecipe }));
       } else {
-        await dispatch(addNewRecipe({ userId: user.uid, recipe }));
+        await dispatch(addNewRecipe({ userId: user.uid, recipe: updatedRecipe }));
       }
       navigation.navigate("Recipes");
     } catch (e) {
@@ -96,7 +145,7 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     } finally {
       setIsAddingRecipe(false);
     }
-  }, [user?.uid, isFormValid, source, navigation, dispatch, recipe]);
+  }, [user?.uid, isFormValid, getAiParsedIngredients, recipe, source, navigation, dispatch]);
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -173,11 +222,11 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
       <Text style={styles.title}>Ingredients</Text>
       <TextInput
         style={[styles.input, styles.tallerInput]}
-        value={recipe.ingredients.join("\n")}
+        value={recipe.ingredientsRaw.join("\n")}
         multiline={true}
         placeholder="Write each ingredient on its own line (e.g. 1 lb potatoes).
 Optional: add section headers (e.g. #spices)"
-        onChangeText={(ingredients) => setRecipe({ ingredients: ingredients.split("\n") })}
+        onChangeText={(value) => setRecipe({ ingredientsRaw: value.split("\n") })}
       />
       {validationErrors.isIngredientsEmpty ? (
         <Text style={styles.error}>Ingredients cannot be empty</Text>
