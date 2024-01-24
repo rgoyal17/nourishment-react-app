@@ -1,16 +1,14 @@
 import { StackScreenProps } from "@react-navigation/stack";
-import React, { useRef } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import React from "react";
+import { Alert, Dimensions, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  interpolate,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useScrollViewOffset,
+} from "react-native-reanimated";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Colors, useTheme, Button, Icon, ListItem, Image } from "@rneui/themed";
+import { Colors, useTheme, Button, Icon, ListItem } from "@rneui/themed";
 import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -19,6 +17,9 @@ import { deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
+
+const { width } = Dimensions.get("window");
+const IMG_HEIGHT = 400;
 
 export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
@@ -35,13 +36,25 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
 
   const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
 
-  const yOffset = useRef(new Animated.Value(0)).current;
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollOffset = useScrollViewOffset(scrollRef);
 
-  const backgroundColor = yOffset.interpolate({
-    inputRange: [0, 400],
-    outputRange: ["rgba(61, 172, 120, 0)", "rgba(61, 172, 120, 1)"],
-    extrapolate: "clamp",
-  });
+  const imageAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollOffset.value,
+          [-IMG_HEIGHT, 0, IMG_HEIGHT],
+          [-IMG_HEIGHT, 0, 0],
+        ),
+      },
+      { scale: interpolate(scrollOffset.value, [-IMG_HEIGHT, 0, IMG_HEIGHT], [2, 1, 1]) },
+    ],
+  }));
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollOffset.value, [0, IMG_HEIGHT * 0.75], [0, 1]),
+  }));
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -67,13 +80,11 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   React.useEffect(() => {
     if (imageExists) {
       navigation.setOptions({
-        headerBackground: () => (
-          <Animated.View style={{ backgroundColor, ...StyleSheet.absoluteFillObject }} />
-        ),
-        headerTransparent: imageExists,
+        headerBackground: () => <Animated.View style={[styles.header, headerAnimatedStyle]} />,
+        headerTransparent: true,
       });
     }
-  }, [backgroundColor, navigation, imageExists, theme.colors.primary]);
+  }, [navigation, imageExists, theme.colors.primary, headerAnimatedStyle, styles.header]);
 
   const handleDeleteRecipe = React.useCallback(async () => {
     if (user?.uid == null) {
@@ -124,19 +135,11 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: yOffset } } }], {
-          useNativeDriver: false,
-        })}
-        scrollEventThrottle={16}
-      >
+      <Animated.ScrollView ref={scrollRef} scrollEventThrottle={16}>
         {imageExists ? (
-          <Image
-            style={{ height: 400 }}
+          <Animated.Image
+            style={[styles.image, imageAnimatedStyle]}
             source={{ uri: recipe.image }}
-            PlaceholderContent={
-              <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
-            }
           />
         ) : null}
         <View style={styles.content}>
@@ -169,7 +172,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           ingredients={parsedIngredients}
           instructions={recipe.instructions}
         />
-      </ScrollView>
+      </Animated.ScrollView>
 
       <BottomSheetModal
         enablePanDownToClose
@@ -208,6 +211,10 @@ const makeStyles = (colors: Colors) =>
       paddingLeft: 0,
       paddingRight: 0,
       marginHorizontal: 10,
+    },
+    header: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.primary,
     },
     bottomSheetOption: {
       display: "flex",
@@ -249,5 +256,9 @@ const makeStyles = (colors: Colors) =>
     servingsText: {
       fontSize: 15,
       fontWeight: "400",
+    },
+    image: {
+      height: IMG_HEIGHT,
+      width,
     },
   });
