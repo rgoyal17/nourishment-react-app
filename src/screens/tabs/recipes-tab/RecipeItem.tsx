@@ -1,6 +1,6 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React from "react";
-import { Alert, Dimensions, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, View } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -35,6 +35,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const [isDeletingRecipe, setIsDeletingRecipe] = React.useState(false);
 
   const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
+  const [isImageLoaded, setIsImageLoaded] = React.useState(false);
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -137,10 +138,16 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     <View style={styles.container}>
       <Animated.ScrollView ref={scrollRef} scrollEventThrottle={16}>
         {imageExists ? (
-          <Animated.Image
-            style={[styles.image, imageAnimatedStyle]}
-            source={{ uri: recipe.image }}
-          />
+          <View>
+            <Animated.Image
+              style={[styles.image, imageAnimatedStyle]}
+              source={{ uri: recipe.image }}
+              onLoadEnd={() => setIsImageLoaded(true)}
+            />
+            {!isImageLoaded ? (
+              <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
+            ) : null}
+          </View>
         ) : null}
         <View style={styles.content}>
           <Text style={styles.title}>{recipe.title}</Text>
@@ -224,9 +231,10 @@ const makeStyles = (colors: Colors) =>
       columnGap: 10,
     },
     activityIndicator: {
+      ...StyleSheet.absoluteFillObject,
       backgroundColor: colors.secondary,
-      height: "100%",
-      width: "100%",
+      height: IMG_HEIGHT,
+      width,
     },
     content: {
       padding: 20,
