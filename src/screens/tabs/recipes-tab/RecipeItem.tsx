@@ -30,6 +30,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const [servings, setServings] = React.useState(
     recipe.servings !== "" ? Number(recipe.servings) : undefined,
   );
+  const [parsedIngredients, setParsedIngredients] = React.useState(recipe.ingredientsParsed);
   const [isDeletingRecipe, setIsDeletingRecipe] = React.useState(false);
 
   const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
@@ -100,6 +101,27 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     });
   }, [navigation, recipe]);
 
+  const handleChangeServings = React.useCallback(
+    (newServings: number) => {
+      setServings(newServings);
+      setParsedIngredients(
+        recipe.ingredientsParsed.map((ingredient) => {
+          const originalQuantity = parseFloat(ingredient.quantity);
+          const originalServings = parseFloat(recipe.servings);
+          return isNaN(originalQuantity) || isNaN(originalServings)
+            ? ingredient
+            : {
+                ...ingredient,
+                quantity: (
+                  Math.round((originalQuantity / originalServings) * newServings * 100) / 100
+                ).toString(),
+              };
+        }),
+      );
+    },
+    [recipe.ingredientsParsed, recipe.servings],
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -134,7 +156,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
               <Text style={styles.servingsText}>Servings: </Text>
               <NumericInput
                 minValue={1}
-                onChange={(serving) => setServings(serving)}
+                onChange={handleChangeServings}
                 rounded
                 totalHeight={30}
                 totalWidth={100}
@@ -144,7 +166,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           ) : null}
         </View>
         <IngredientsAndInstructions
-          ingredients={recipe.ingredientsParsed}
+          ingredients={parsedIngredients}
           instructions={recipe.instructions}
         />
       </ScrollView>
