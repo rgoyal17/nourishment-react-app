@@ -4,13 +4,17 @@ import { Button, Colors, useTheme } from "@rneui/themed";
 import { Ingredient } from "../../../redux/recipesSlice";
 
 interface IngredientsAndInstructionsProps {
-  ingredients: Ingredient[];
   instructions: string[];
+  isFormattedChecked: boolean;
+  parsedIngredients: Ingredient[];
+  rawIngredients: string[];
 }
 
 export function IngredientsAndInstructions({
-  ingredients,
   instructions,
+  isFormattedChecked,
+  parsedIngredients,
+  rawIngredients,
 }: IngredientsAndInstructionsProps) {
   const { theme } = useTheme();
   const { primary, secondary } = theme.colors;
@@ -40,14 +44,20 @@ export function IngredientsAndInstructions({
       </View>
       <View>
         {selectedTab === 0
-          ? ingredients.map((ingredient, index) => (
-              <View style={styles.ingredientContainer} key={index}>
-                <Text style={styles.ingredient}>{ingredient.item}</Text>
-                <Text style={styles.rightText}>
-                  {ingredient.quantity} {ingredient.unit}
-                </Text>
-              </View>
-            ))
+          ? isFormattedChecked
+            ? parsedIngredients.map((ingredient, index) => (
+                <View style={styles.ingredientContainer} key={index}>
+                  <Text style={styles.ingredient}>{ingredient.item}</Text>
+                  <Text style={styles.rightText}>
+                    {ingredient.quantity} {ingredient.unit}
+                  </Text>
+                </View>
+              ))
+            : rawIngredients.map((ingredient, index) => (
+                <View style={styles.ingredientContainer} key={index}>
+                  <Text style={styles.ingredient}>{ingredient}</Text>
+                </View>
+              ))
           : instructions.map((instruction, index) => (
               <View style={styles.instructionContainer} key={index}>
                 <Text style={styles.index}>{index + 1}</Text>

@@ -8,7 +8,7 @@ import Animated, {
   useScrollViewOffset,
 } from "react-native-reanimated";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Colors, useTheme, Button, Icon, ListItem } from "@rneui/themed";
+import { Colors, useTheme, Button, Icon, ListItem, CheckBox, Tooltip } from "@rneui/themed";
 import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -36,6 +36,9 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
 
   const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
+
+  const [isFormattedChecked, setIsFormattedChecked] = React.useState(true);
+  const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -174,10 +177,35 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
               />
             </View>
           ) : null}
+          <View style={styles.checkbox}>
+            <CheckBox
+              title="View formatted ingredients"
+              checked={isFormattedChecked}
+              onPress={() => setIsFormattedChecked(!isFormattedChecked)}
+              containerStyle={styles.checkboxContainer}
+              textStyle={styles.checkboxText}
+            />
+            <Tooltip
+              visible={isTooltipOpen}
+              onOpen={() => setIsTooltipOpen(true)}
+              onClose={() => setIsTooltipOpen(false)}
+              popover={
+                <Text style={{ color: theme.colors.secondary }}>
+                  We parse your ingredients to format them
+                </Text>
+              }
+              width={300}
+              backgroundColor={theme.colors.primary}
+            >
+              <Icon color={theme.colors.primary} name="help" />
+            </Tooltip>
+          </View>
         </View>
         <IngredientsAndInstructions
-          ingredients={parsedIngredients}
           instructions={recipe.instructions}
+          isFormattedChecked={isFormattedChecked}
+          parsedIngredients={parsedIngredients}
+          rawIngredients={recipe.ingredientsRaw}
         />
       </Animated.ScrollView>
 
@@ -238,6 +266,7 @@ const makeStyles = (colors: Colors) =>
     },
     content: {
       padding: 20,
+      paddingBottom: 10,
       display: "flex",
       rowGap: 10,
     },
@@ -268,5 +297,20 @@ const makeStyles = (colors: Colors) =>
     image: {
       height: IMG_HEIGHT,
       width,
+    },
+    checkbox: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    checkboxContainer: {
+      backgroundColor: colors.secondary,
+      paddingLeft: 0,
+      marginLeft: 0,
+      marginVertical: 0,
+      paddingVertical: 0,
+    },
+    checkboxText: {
+      fontWeight: "500",
     },
   });
