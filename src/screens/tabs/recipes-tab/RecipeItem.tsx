@@ -22,7 +22,6 @@ import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useAppDispatch } from "../../../redux/hooks";
 import { deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
-import { compact } from "lodash";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -43,7 +42,13 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const imageExists = React.useMemo(() => recipe.image !== "", [recipe.image]);
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
 
-  const [isFormattedChecked, setIsFormattedChecked] = React.useState(true);
+  const shouldShowFormattedCheckbox = React.useMemo(
+    () =>
+      recipe.ingredientsParsed.some((parsedIngredient) => parsedIngredient.quantity.trim() !== ""),
+    [recipe.ingredientsParsed],
+  );
+
+  const [isFormattedChecked, setIsFormattedChecked] = React.useState(shouldShowFormattedCheckbox);
   const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -189,43 +194,46 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           {recipe.servings !== "" ? (
             <View style={styles.servings}>
               <Text style={styles.servingsText}>Servings: </Text>
-              <TextInput
-                style={compact([
-                  styles.input,
-                  !isFormattedChecked ? { backgroundColor: theme.colors.grey4 } : undefined,
-                ])}
-                keyboardType="numeric"
-                value={servings}
-                returnKeyType="done"
-                editable={isFormattedChecked}
-                onChangeText={handleChangeServings}
-                onEndEditing={handleEndEditingServings}
-              />
+              {isFormattedChecked ? (
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  value={servings}
+                  returnKeyType="done"
+                  editable={isFormattedChecked}
+                  onChangeText={handleChangeServings}
+                  onEndEditing={handleEndEditingServings}
+                />
+              ) : (
+                <Text style={{ fontSize: 15 }}>{servings}</Text>
+              )}
             </View>
           ) : null}
-          <View style={styles.checkbox}>
-            <CheckBox
-              title="View formatted ingredients"
-              checked={isFormattedChecked}
-              onPress={handleFormattedCheckChange}
-              containerStyle={styles.checkboxContainer}
-              textStyle={styles.checkboxText}
-            />
-            <Tooltip
-              visible={isTooltipOpen}
-              onOpen={() => setIsTooltipOpen(true)}
-              onClose={() => setIsTooltipOpen(false)}
-              popover={
-                <Text style={{ color: theme.colors.secondary }}>
-                  We parse your ingredients to format them
-                </Text>
-              }
-              width={300}
-              backgroundColor={theme.colors.primary}
-            >
-              <Icon color={theme.colors.primary} name="help" />
-            </Tooltip>
-          </View>
+          {shouldShowFormattedCheckbox ? (
+            <View style={styles.checkbox}>
+              <CheckBox
+                title="View formatted ingredients"
+                checked={isFormattedChecked}
+                onPress={handleFormattedCheckChange}
+                containerStyle={styles.checkboxContainer}
+                textStyle={styles.checkboxText}
+              />
+              <Tooltip
+                visible={isTooltipOpen}
+                onOpen={() => setIsTooltipOpen(true)}
+                onClose={() => setIsTooltipOpen(false)}
+                popover={
+                  <Text style={{ color: theme.colors.secondary }}>
+                    We parse your ingredients to format them
+                  </Text>
+                }
+                width={300}
+                backgroundColor={theme.colors.primary}
+              >
+                <Icon color={theme.colors.primary} name="help" />
+              </Tooltip>
+            </View>
+          ) : null}
         </View>
         <IngredientsAndInstructions
           instructions={recipe.instructions}
@@ -320,7 +328,6 @@ const makeStyles = (colors: Colors) =>
     },
     servings: {
       alignItems: "center",
-      display: "flex",
       flexDirection: "row",
       height: 35,
     },

@@ -110,7 +110,7 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
         { role: "user", content: getIngredientsAiInput() },
       ],
       response_format: { type: "json_object" },
-      model: "gpt-4-1106-preview",
+      model: "gpt-4-0125-preview",
     });
     const content = response.choices[0].message.content;
     return content == null ? null : (JSON.parse(content).ingredients as Ingredient[]);
