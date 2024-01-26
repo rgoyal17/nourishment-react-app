@@ -1,6 +1,14 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import React from "react";
-import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -9,12 +17,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { Colors, useTheme, Button, Icon, ListItem, CheckBox, Tooltip } from "@rneui/themed";
-import NumericInput from "react-native-numeric-input";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useAppDispatch } from "../../../redux/hooks";
 import { deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
+import { compact } from "lodash";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -28,9 +36,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const dispatch = useAppDispatch();
   const { user } = useAuthentication();
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
-  const [servings, setServings] = React.useState(
-    recipe.servings !== "" ? Number(recipe.servings) : undefined,
-  );
+  const [servings, setServings] = React.useState(recipe.servings);
   const [parsedIngredients, setParsedIngredients] = React.useState(recipe.ingredientsParsed);
   const [isDeletingRecipe, setIsDeletingRecipe] = React.useState(false);
 
@@ -117,8 +123,12 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   }, [navigation, recipe]);
 
   const handleChangeServings = React.useCallback(
-    (newServings: number) => {
+    (newServings: string) => {
       setServings(newServings);
+      let numServings = parseFloat(newServings);
+      if (isNaN(numServings) || numServings < 0) {
+        numServings = 0;
+      }
       setParsedIngredients(
         recipe.ingredientsParsed.map((ingredient) => {
           const originalQuantity = parseFloat(ingredient.quantity);
@@ -128,7 +138,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
             : {
                 ...ingredient,
                 quantity: (
-                  Math.round((originalQuantity / originalServings) * newServings * 100) / 100
+                  Math.round((originalQuantity / originalServings) * numServings * 100) / 100
                 ).toString(),
               };
         }),
@@ -136,6 +146,18 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     },
     [recipe.ingredientsParsed, recipe.servings],
   );
+
+  const handleEndEditingServings = React.useCallback(() => {
+    const numServings = parseFloat(servings);
+    if (isNaN(numServings) || numServings < 0) {
+      setServings("0");
+    }
+  }, [servings]);
+
+  const handleFormattedCheckChange = React.useCallback(() => {
+    handleChangeServings(recipe.servings);
+    setIsFormattedChecked((prev) => !prev);
+  }, [handleChangeServings, recipe.servings]);
 
   return (
     <View style={styles.container}>
@@ -164,16 +186,20 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
               ) : null}
             </View>
           ) : null}
-          {servings != null ? (
+          {recipe.servings !== "" ? (
             <View style={styles.servings}>
               <Text style={styles.servingsText}>Servings: </Text>
-              <NumericInput
-                minValue={1}
-                onChange={handleChangeServings}
-                rounded
-                totalHeight={30}
-                totalWidth={100}
+              <TextInput
+                style={compact([
+                  styles.input,
+                  !isFormattedChecked ? { backgroundColor: theme.colors.grey4 } : undefined,
+                ])}
+                keyboardType="numeric"
                 value={servings}
+                returnKeyType="done"
+                editable={isFormattedChecked}
+                onChangeText={handleChangeServings}
+                onEndEditing={handleEndEditingServings}
               />
             </View>
           ) : null}
@@ -181,7 +207,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
             <CheckBox
               title="View formatted ingredients"
               checked={isFormattedChecked}
-              onPress={() => setIsFormattedChecked(!isFormattedChecked)}
+              onPress={handleFormattedCheckChange}
               containerStyle={styles.checkboxContainer}
               textStyle={styles.checkboxText}
             />
@@ -285,10 +311,18 @@ const makeStyles = (colors: Colors) =>
       fontSize: 18,
       fontWeight: "400",
     },
+    input: {
+      backgroundColor: colors.white,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      height: 30,
+      width: 50,
+    },
     servings: {
       alignItems: "center",
       display: "flex",
       flexDirection: "row",
+      height: 35,
     },
     servingsText: {
       fontSize: 15,
