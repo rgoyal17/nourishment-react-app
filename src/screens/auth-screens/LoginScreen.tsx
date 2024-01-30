@@ -1,6 +1,6 @@
 import React from "react";
 import { ImageBackground, StyleSheet, Text, View } from "react-native";
-import { Button, Colors, Input, useTheme } from "@rneui/themed";
+import { Button, Colors, Icon, Input, useTheme } from "@rneui/themed";
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Sentry from "@sentry/react-native";
@@ -39,6 +39,9 @@ export function LoginScreen() {
     INITIAL_LOGIN_STATE,
   );
 
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
   const handleChangeTab = (tabId: number) => () => {
     setLoginState({ error: "" });
     setSelectedTab(tabId);
@@ -55,16 +58,16 @@ export function LoginScreen() {
     try {
       await signInWithEmailAndPassword(auth, loginState.email, loginState.password);
     } catch (error: any) {
-      let errorMessage = "Failed to sign in";
       if (error.code === "auth/user-not-found") {
-        errorMessage = "Email address doesn't exist";
+        setLoginState({ error: "Email address doesn't exist, please sign up first" });
       } else if (error.code === "auth/wrong-password") {
-        errorMessage = "Incorrect password";
+        setLoginState({ error: "Incorrect password" });
       } else if (error.code === "auth/invalid-email") {
-        errorMessage = "Invalid email address";
+        setLoginState({ error: "Invalid email address" });
+      } else {
+        Sentry.captureException(error);
+        setLoginState({ error: "Failed to sign in" });
       }
-      Sentry.captureException(error);
-      setLoginState({ error: errorMessage });
     }
   }
 
@@ -86,16 +89,16 @@ export function LoginScreen() {
     try {
       await createUserWithEmailAndPassword(auth, loginState.email, loginState.password);
     } catch (error: any) {
-      let errorMessage = "Failed to sign up";
       if (error.code === "auth/invalid-email") {
-        errorMessage = "Invalid email address";
+        setLoginState({ error: "Invalid email address" });
       } else if (error.code === "auth/weak-password") {
-        errorMessage = "Password too weak";
+        setLoginState({ error: "Password too weak" });
       } else if (error.code === "auth/email-already-in-use") {
-        errorMessage = "Email address already exists, please sign in";
+        setLoginState({ error: "Email address already exists, please sign in" });
+      } else {
+        Sentry.captureException(error);
+        setLoginState({ error: "Failed to sign up" });
       }
-      Sentry.captureException(error);
-      setLoginState({ error: errorMessage });
     }
   }
 
@@ -141,20 +144,38 @@ export function LoginScreen() {
               placeholder="Password"
               value={loginState.password}
               onChangeText={(text) => setLoginState({ password: text })}
-              secureTextEntry={true}
+              secureTextEntry={!showPassword}
               inputContainerStyle={styles.input}
               containerStyle={styles.inputContainer}
               returnKeyType="done"
+              rightIcon={
+                showPassword ? (
+                  <Icon name="eye-with-line" type="entypo" onPress={() => setShowPassword(false)} />
+                ) : (
+                  <Icon name="eye" type="entypo" onPress={() => setShowPassword(true)} />
+                )
+              }
             />
             {selectedTab === 1 ? (
               <Input
                 placeholder="Confirm password"
                 value={loginState.confirmPassword}
                 onChangeText={(text) => setLoginState({ confirmPassword: text })}
-                secureTextEntry={true}
+                secureTextEntry={!showConfirmPassword}
                 inputContainerStyle={styles.input}
                 containerStyle={styles.inputContainer}
                 returnKeyType="done"
+                rightIcon={
+                  showConfirmPassword ? (
+                    <Icon
+                      name="eye-with-line"
+                      type="entypo"
+                      onPress={() => setShowConfirmPassword(false)}
+                    />
+                  ) : (
+                    <Icon name="eye" type="entypo" onPress={() => setShowConfirmPassword(true)} />
+                  )
+                }
               />
             ) : null}
             {loginState.error !== "" ? <Text style={styles.error}>{loginState.error}</Text> : null}
