@@ -78,6 +78,7 @@ export function Recipes({ navigation }: RecipesProps) {
           instructions: recipe.instructions_list ?? [],
           cookTime: "",
           prepTime: "",
+          websiteUrl: recipeUrl,
         },
         source: "import",
       });

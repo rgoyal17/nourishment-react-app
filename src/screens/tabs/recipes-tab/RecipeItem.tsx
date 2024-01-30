@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   StyleSheet,
   Text,
   TextInput,
@@ -119,6 +120,13 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     }
   }, [dispatch, navigation, recipe.id, user?.uid]);
 
+  const handleDeleteClick = React.useCallback(async () => {
+    Alert.alert("Are you sure you want to delete this recipe?", undefined, [
+      { text: "Cancel" },
+      { text: "Delete", onPress: handleDeleteRecipe, style: "destructive" },
+    ]);
+  }, [handleDeleteRecipe]);
+
   const handleEditRecipe = React.useCallback(() => {
     bottomSheetRef.current?.dismiss();
     navigation.navigate("Add Recipe", {
@@ -193,7 +201,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
           ) : null}
           {recipe.servings !== "" ? (
             <View style={styles.servings}>
-              <Text style={styles.servingsText}>Servings: </Text>
+              <Text style={styles.textSize}>Servings: </Text>
               {isFormattedChecked ? (
                 <TextInput
                   style={styles.input}
@@ -205,9 +213,19 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
                   onEndEditing={handleEndEditingServings}
                 />
               ) : (
-                <Text style={{ fontSize: 15 }}>{servings}</Text>
+                <Text style={styles.textSize}>{servings}</Text>
               )}
             </View>
+          ) : null}
+          {recipe.websiteUrl != null ? (
+            <Text style={styles.textSize} numberOfLines={2}>
+              Source:&nbsp;
+              {
+                <Text style={styles.link} onPress={() => Linking.openURL(recipe.websiteUrl ?? "")}>
+                  {recipe.websiteUrl}
+                </Text>
+              }
+            </Text>
           ) : null}
           {shouldShowFormattedCheckbox ? (
             <View style={styles.checkbox}>
@@ -257,7 +275,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
             <ListItem.Title>Edit</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-        <ListItem onPress={handleDeleteRecipe}>
+        <ListItem onPress={handleDeleteClick}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="delete" />
             <ListItem.Title>{isDeletingRecipe ? "Deleting..." : "Delete"}</ListItem.Title>
@@ -307,6 +325,7 @@ const makeStyles = (colors: Colors) =>
     title: {
       fontSize: 30,
       fontWeight: "500",
+      paddingBottom: 10,
     },
     time: {
       flex: 1,
@@ -317,7 +336,6 @@ const makeStyles = (colors: Colors) =>
     },
     timeText: {
       fontSize: 18,
-      fontWeight: "400",
     },
     input: {
       backgroundColor: colors.white,
@@ -331,9 +349,8 @@ const makeStyles = (colors: Colors) =>
       flexDirection: "row",
       height: 35,
     },
-    servingsText: {
+    textSize: {
       fontSize: 15,
-      fontWeight: "400",
     },
     image: {
       height: IMG_HEIGHT,
@@ -353,5 +370,8 @@ const makeStyles = (colors: Colors) =>
     },
     checkboxText: {
       fontWeight: "500",
+    },
+    link: {
+      color: colors.grey3,
     },
   });

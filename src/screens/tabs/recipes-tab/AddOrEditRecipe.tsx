@@ -105,7 +105,7 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
         {
           role: "system",
           content:
-            "You will be given a list of ingredient objects separated by a comma. Each ingredient might contain the item name, a quantity, and a unit of measurement. Your output format should be a JSON containing all ingredients of format { item: string, quantity: string, unit: string }. Use empty string when a value is not present. Quantity should always be numbers only. For example if you are given [{1 kg potatoes}, {3 onions}], you should return {ingredients: [{item: 'potatoes', quantity: `1.5`, unit: 'kg'}, {item: 'onions', quantity: '3', unit: ''}]}",
+            "You will be given a list of ingredient objects separated by a comma. Each ingredient might contain the item name, a quantity, and a unit of measurement. The quantity may include fractions and compound units. Your output format should be a JSON containing all ingredients of format { item: string, quantity: string, unit: string }. Use empty string when a value is not present. Quantity should always be numbers only. Ignore text inside brackets. For example if you are given [{1 kg potatoes}, {3 onions}, {1 1/4 cups water}], you should return {ingredients: [{item: 'potatoes', quantity: `1.5`, unit: 'kg'}, {item: 'onions', quantity: '3', unit: ''}, {item: 'water', quantity: '1.25', unit: 'cups'}]}",
         },
         { role: "user", content: getIngredientsAiInput() },
       ],
