@@ -242,6 +242,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
                 onClose={() => setIsTooltipOpen(false)}
                 popover={<Text>We parse your ingredients to format them</Text>}
                 width={300}
+                backgroundColor={theme.colors.white}
               >
                 <Icon color={theme.colors.primary} name="help" />
               </Tooltip>
