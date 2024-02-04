@@ -6,6 +6,7 @@ import { RecipesTab } from "../screens/tabs/recipes-tab/RecipesTab";
 import { IngredientsTab } from "../screens/tabs/ingredients-tab/IngredientsTab";
 import { CalendarTab } from "../screens/tabs/calendar-tab/CalendarTab";
 import { AccountTab } from "../screens/tabs/account-tab/AccountTab";
+import { HEADER_HEIGHT } from "../common/constants";
 
 const Tab = createBottomTabNavigator();
 
@@ -20,7 +21,7 @@ export function UserStack() {
           tabBarStyle: { backgroundColor: primary },
           tabBarActiveTintColor: secondary,
           tabBarInactiveTintColor: grey2,
-          headerStyle: { backgroundColor: primary },
+          headerStyle: { backgroundColor: primary, height: HEADER_HEIGHT },
           headerTintColor: secondary,
         }}
       >
@@ -48,6 +49,7 @@ export function UserStack() {
             tabBarIcon: ({ focused }) => (
               <Icon name="calendar" type="font-awesome" color={focused ? secondary : grey2} />
             ),
+            headerShown: false,
           }}
           name="Calendar"
           component={CalendarTab}

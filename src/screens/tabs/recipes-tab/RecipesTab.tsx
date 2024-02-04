@@ -6,6 +6,7 @@ import { RecipeItem } from "./RecipeItem";
 import { Button, useTheme } from "@rneui/themed";
 import { Icon } from "@rneui/base";
 import { Recipe } from "../../../redux/recipesSlice";
+import { HEADER_HEIGHT } from "../../../common/constants";
 
 export type RecipesTabStackParamList = {
   "Add Recipe": { recipe?: Recipe; source: "scratch" | "import" | "edit" };
@@ -23,7 +24,7 @@ export function RecipesTab() {
     <Stack.Navigator
       initialRouteName="Recipes"
       screenOptions={{
-        headerStyle: { backgroundColor: primary },
+        headerStyle: { backgroundColor: primary, height: HEADER_HEIGHT },
         headerBackTitleVisible: false,
         headerTintColor: secondary,
         headerBackImage: () => <Icon color={secondary} name="chevron-left" size={40} />,

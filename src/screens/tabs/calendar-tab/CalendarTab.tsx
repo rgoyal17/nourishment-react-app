@@ -1,24 +1,41 @@
-import { Colors, useTheme } from "@rneui/themed";
+import { createStackNavigator } from "@react-navigation/stack";
+import { Button, Icon, useTheme } from "@rneui/themed";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { CalendarItems } from "./CalendarItems";
+import { AddCalendarItem } from "./AddCalendarItem";
+import { HEADER_HEIGHT } from "../../../common/constants";
+
+export type CalendarTabStackParamList = {
+  AddCalendarItem: undefined;
+  CalendarItems: undefined;
+};
+
+const Stack = createStackNavigator<CalendarTabStackParamList>();
 
 export function CalendarTab() {
   const { theme } = useTheme();
-  const styles = makeStyles(theme.colors);
+  const { primary, secondary } = theme.colors;
+
   return (
-    <View style={styles.container}>
-      <Text>Calendar tab!</Text>
-    </View>
+    <Stack.Navigator
+      initialRouteName="CalendarItems"
+      screenOptions={{
+        headerStyle: { backgroundColor: primary, height: HEADER_HEIGHT },
+        headerBackTitleVisible: false,
+        headerTintColor: secondary,
+        headerBackImage: () => <Icon color={secondary} name="chevron-left" size={40} />,
+      }}
+    >
+      <Stack.Screen
+        name="AddCalendarItem"
+        component={AddCalendarItem}
+        options={{ headerRight: () => <Button title="Done" />, title: "Add To Calendar" }}
+      />
+      <Stack.Screen
+        name="CalendarItems"
+        component={CalendarItems}
+        options={{ title: "Calendar" }}
+      />
+    </Stack.Navigator>
   );
 }
-
-const makeStyles = (colors: Colors) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      paddingTop: 20,
-      backgroundColor: colors.secondary,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-  });
