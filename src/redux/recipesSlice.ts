@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import { ref, getDownloadURL, getStorage, uploadBytesResumable } from "firebase/storage";
 import {
@@ -119,7 +119,9 @@ const uploadToFirebase = async (imageUri: string, storagePath: string): Promise<
 
 export const selectAllRecipes = (state: RootState) => state.recipes;
 
-export const selectRecipeByName = (state: RootState, name: string) =>
-  state.recipes.find((recipe) => recipe.title === name);
+export const selectRecipesByIds = createSelector(
+  [selectAllRecipes, (_state: RootState, recipeIds: string[]) => recipeIds],
+  (recipes, recipeIds) => recipes.filter((recipe) => recipeIds.includes(recipe.id)),
+);
 
 export const recipesReducer = recipesSlice.reducer;

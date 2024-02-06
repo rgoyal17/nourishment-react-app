@@ -4,8 +4,10 @@ import React from "react";
 import { CalendarItems } from "./CalendarItems";
 import { AddCalendarItem } from "./AddCalendarItem";
 import { HEADER_HEIGHT } from "../../../common/constants";
+import { RecipesTabStackParamList } from "../recipes-tab/RecipesTab";
 
 export type CalendarTabStackParamList = {
+  RecipesTab: { screen: keyof RecipesTabStackParamList; params: any };
   AddCalendarItem: undefined;
   CalendarItems: undefined;
 };

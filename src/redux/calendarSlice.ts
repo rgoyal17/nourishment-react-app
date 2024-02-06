@@ -1,12 +1,17 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { Recipe } from "./recipesSlice";
-import { collection, doc, getDocs, getFirestore, setDoc } from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
+import { collection, doc, getDoc, getDocs, getFirestore, setDoc } from "firebase/firestore";
 import { RootState } from "./store";
+import { uniq } from "lodash";
+import * as Sentry from "@sentry/react-native";
+
+export interface CalendarItemData {
+  label?: string;
+  recipeIds: string[];
+}
 
 export interface CalendarItem {
-  date: Date;
-  recipes: { label?: string; recipe: Recipe }[];
+  title: string;
+  data: CalendarItemData[];
 }
 
 export const fetchCalendarItems = createAsyncThunk(
@@ -23,18 +28,38 @@ export const fetchCalendarItems = createAsyncThunk(
 
 interface AddNewCalendarItemParams {
   userId: string;
-  calendarItem: CalendarItem;
+  date: string;
+  calendarItemData: CalendarItemData;
 }
 
 export const addNewCalendarItem = createAsyncThunk(
-  "recipes/addNewRecipe",
-  async ({ userId, calendarItem }: AddNewCalendarItemParams) => {
-    const id = uuidv4();
+  "calendar/addNewCalendarItem",
+  async ({ userId, date, calendarItemData }: AddNewCalendarItemParams) => {
     const db = getFirestore();
-    const calendarItemDoc = doc(db, `users/${userId}/recipes/${id}`);
-    await setDoc(calendarItemDoc, calendarItem);
+    const title = date.split("T")[0];
+    const calendarItemDoc = doc(db, `users/${userId}/calendarItems/${title}`);
+    // there can be existing calendar item for this date
+    try {
+      const existingData: CalendarItemData[] | undefined = (await getDoc(calendarItemDoc)).data()
+        ?.data;
+      // there can be existing recipes for this label on this date.
+      const existingLabelData = existingData?.find((data) => data.label === calendarItemData.label);
 
-    return calendarItem;
+      if (existingData == null) {
+        await setDoc(calendarItemDoc, { title, data: [calendarItemData] });
+      } else if (existingLabelData == null) {
+        await setDoc(calendarItemDoc, { title, data: [...existingData, calendarItemData] });
+      } else {
+        const filteredData = existingData.filter((data) => data.label !== calendarItemData.label);
+        const updatedLabelData: CalendarItemData = {
+          ...existingLabelData,
+          recipeIds: uniq([...existingLabelData.recipeIds, ...calendarItemData.recipeIds]),
+        };
+        await setDoc(calendarItemDoc, { title, data: [...filteredData, updatedLabelData] });
+      }
+    } catch (e) {
+      Sentry.captureException(e);
+    }
   },
 );
 
