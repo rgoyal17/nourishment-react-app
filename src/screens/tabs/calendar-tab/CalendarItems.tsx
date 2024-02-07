@@ -14,6 +14,7 @@ import {
 } from "../../../redux/calendarSlice";
 import { MemoizedCalendarItem } from "./CalendarItem";
 import { Recipe } from "../../../redux/recipesSlice";
+import { getLocalDateString } from "../../../common/date";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarItems">;
 
@@ -23,7 +24,7 @@ export function CalendarItems({ navigation }: CalendarItemsProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
 
-  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString());
+  const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));
 
   const calendarItems = useAppSelector(selectAllCalendarItems);
 
@@ -69,7 +70,12 @@ export function CalendarItems({ navigation }: CalendarItemsProps) {
           markedDates={markedDates}
           onDayPress={(dateData) => setSelectedDate(dateData.dateString)}
         />
-        <AgendaList sections={calendarItems} renderItem={renderItem} scrollToNextEvent />
+        <AgendaList
+          sectionStyle={styles.agendaSectionStyle}
+          sections={calendarItems}
+          renderItem={renderItem}
+          scrollToNextEvent
+        />
       </CalendarProvider>
       <FAB
         style={styles.fab}
@@ -91,5 +97,8 @@ const makeStyles = (colors: Colors) =>
       position: "absolute",
       bottom: 20,
       right: 20,
+    },
+    agendaSectionStyle: {
+      paddingBottom: 0,
     },
   });

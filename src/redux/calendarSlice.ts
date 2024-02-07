@@ -3,6 +3,7 @@ import { collection, doc, getDoc, getDocs, getFirestore, setDoc } from "firebase
 import { RootState } from "./store";
 import { uniq } from "lodash";
 import * as Sentry from "@sentry/react-native";
+import { getLocalDateString } from "../common/date";
 
 export interface CalendarItemData {
   label?: string;
@@ -28,7 +29,7 @@ export const fetchCalendarItems = createAsyncThunk(
 
 interface AddNewCalendarItemParams {
   userId: string;
-  date: string;
+  date: Date;
   calendarItemData: CalendarItemData;
 }
 
@@ -36,7 +37,7 @@ export const addNewCalendarItem = createAsyncThunk(
   "calendar/addNewCalendarItem",
   async ({ userId, date, calendarItemData }: AddNewCalendarItemParams) => {
     const db = getFirestore();
-    const title = date.split("T")[0];
+    const title = getLocalDateString(date);
     const calendarItemDoc = doc(db, `users/${userId}/calendarItems/${title}`);
     // there can be existing calendar item for this date
     try {

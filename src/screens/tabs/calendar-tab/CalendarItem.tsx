@@ -56,7 +56,7 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.white,
       rowGap: 10,
       padding: 20,
-      paddingTop: 0,
+      borderBottomWidth: 1,
     },
     fab: {
       position: "absolute",

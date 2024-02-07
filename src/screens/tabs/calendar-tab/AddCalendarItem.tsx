@@ -33,7 +33,7 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
 
-  const [date, setDate] = React.useState(new Date().toISOString());
+  const [date, setDate] = React.useState(new Date());
   const [label, setLabel] = React.useState<string>();
   const [selectedRecipeIds, setSelectedRecipeIds] = React.useState<string[]>([]);
   const [isAddingCalendarItem, setIsAddingCalendarItem] = React.useState(false);
@@ -46,7 +46,7 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
 
   const handleConfirmDate = React.useCallback(({ type }: DateTimePickerEvent, date?: Date) => {
     if (type === "set" && date != null) {
-      setDate(date.toISOString());
+      setDate(date);
     }
   }, []);
 
