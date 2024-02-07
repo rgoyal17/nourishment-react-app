@@ -127,6 +127,7 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
             submitButtonColor={primary}
             tagBorderColor={primary}
             tagTextColor={primary}
+            submitButtonText="Select"
           />
         </View>
       </View>

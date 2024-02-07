@@ -69,7 +69,7 @@ export function CalendarItems({ navigation }: CalendarItemsProps) {
           markedDates={markedDates}
           onDayPress={(dateData) => setSelectedDate(dateData.dateString)}
         />
-        <AgendaList sections={calendarItems} renderItem={renderItem} />
+        <AgendaList sections={calendarItems} renderItem={renderItem} scrollToNextEvent />
       </CalendarProvider>
       <FAB
         style={styles.fab}
