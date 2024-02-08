@@ -21,6 +21,7 @@ type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarI
 export function CalendarItems({ navigation }: CalendarItemsProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
+  const { primary } = theme.colors;
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
 
@@ -64,11 +65,24 @@ export function CalendarItems({ navigation }: CalendarItemsProps) {
 
   return (
     <View style={styles.container}>
-      <CalendarProvider date={selectedDate} showTodayButton>
+      <CalendarProvider
+        date={selectedDate}
+        showTodayButton
+        theme={{ todayButtonTextColor: primary }}
+      >
         <ExpandableCalendar
           firstDay={1}
           markedDates={markedDates}
           onDayPress={(dateData) => setSelectedDate(dateData.dateString)}
+          theme={{
+            dotColor: primary,
+            todayDotColor: primary,
+            indicatorColor: primary,
+            selectedDotColor: primary,
+            arrowColor: primary,
+            selectedDayBackgroundColor: primary,
+            todayTextColor: primary,
+          }}
         />
         <AgendaList
           sectionStyle={styles.agendaSectionStyle}

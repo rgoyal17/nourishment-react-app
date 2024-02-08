@@ -1,5 +1,5 @@
 import { ActivityIndicator, View, StyleSheet } from "react-native";
-import { Colors, Icon, Image, Text, useTheme } from "@rneui/themed";
+import { Colors, Divider, Icon, Image, Text, useTheme } from "@rneui/themed";
 import React from "react";
 import { CalendarItemData } from "../../../redux/calendarSlice";
 import { useAppSelector } from "../../../redux/hooks";
@@ -20,29 +20,35 @@ function CalendarItem({ data, onNavigateToRecipe }: CalendarItemProps) {
 
   return (
     <View style={styles.container}>
-      {label != null ? <Text>{label}</Text> : null}
-      {recipes.map((recipe) => (
-        <TouchableOpacity
-          key={recipe.id}
-          style={styles.recipe}
-          onPress={() => onNavigateToRecipe(recipe)}
-        >
-          {recipe.image === "" ? (
-            <View>
-              <Icon style={styles.noImage} name="photo" color={theme.colors.grey2} size={50} />
-            </View>
-          ) : (
-            <Image
-              style={styles.image}
-              source={{ uri: recipe.image }}
-              PlaceholderContent={
-                <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
-              }
-            />
-          )}
-          <Text>{recipe.title}</Text>
-        </TouchableOpacity>
-      ))}
+      <View style={styles.content}>
+        {label != null ? <Text>{label}</Text> : null}
+        {recipes.map((recipe) => (
+          <TouchableOpacity
+            key={recipe.id}
+            style={styles.recipe}
+            onPress={() => onNavigateToRecipe(recipe)}
+          >
+            {recipe.image === "" ? (
+              <View>
+                <Icon style={styles.noImage} name="photo" color={theme.colors.grey2} size={50} />
+              </View>
+            ) : (
+              <Image
+                style={styles.image}
+                source={{ uri: recipe.image }}
+                PlaceholderContent={
+                  <ActivityIndicator
+                    style={styles.activityIndicator}
+                    color={theme.colors.primary}
+                  />
+                }
+              />
+            )}
+            <Text>{recipe.title}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Divider inset insetType="middle" />
     </View>
   );
 }
@@ -54,9 +60,10 @@ const makeStyles = (colors: Colors) =>
     container: {
       flex: 1,
       backgroundColor: colors.white,
+    },
+    content: {
       rowGap: 10,
       padding: 20,
-      borderBottomWidth: 1,
     },
     fab: {
       position: "absolute",
