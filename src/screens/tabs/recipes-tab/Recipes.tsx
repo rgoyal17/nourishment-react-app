@@ -91,47 +91,61 @@ export function Recipes({ navigation }: RecipesProps) {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={recipes}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.recipeItem}
-            onPress={() => navigation.navigate("RecipeItem", { recipe: item })}
-          >
-            <View style={styles.recipe}>
-              {item.image === "" ? (
-                <View style={styles.noImage}>
-                  <Icon name="photo" color={theme.colors.grey2} size={70} />
-                </View>
-              ) : (
-                <Image
-                  style={styles.image}
-                  source={{ uri: item.image }}
-                  PlaceholderContent={
-                    <ActivityIndicator
-                      style={styles.activityIndicator}
-                      color={theme.colors.primary}
-                    />
-                  }
-                />
-              )}
-              <Text numberOfLines={3} style={styles.title}>
-                {item.title}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
-        numColumns={2}
-        keyExtractor={(_, index) => `${index}`}
-        refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
-      />
+      {recipes.length > 0 ? (
+        <FlatList
+          data={recipes}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.recipeItem}
+              onPress={() => navigation.navigate("RecipeItem", { recipe: item })}
+            >
+              <View style={styles.recipe}>
+                {item.image === "" ? (
+                  <View style={styles.noImage}>
+                    <Icon name="photo" color={theme.colors.grey2} size={70} />
+                  </View>
+                ) : (
+                  <Image
+                    style={styles.image}
+                    source={{ uri: item.image }}
+                    PlaceholderContent={
+                      <ActivityIndicator
+                        style={styles.activityIndicator}
+                        color={theme.colors.primary}
+                      />
+                    }
+                  />
+                )}
+                <Text numberOfLines={3} style={styles.title}>
+                  {item.title}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          numColumns={2}
+          keyExtractor={(_, index) => `${index}`}
+          refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        />
+      ) : (
+        <View style={styles.emptyView}>
+          <Icon name="menu-book" size={50} />
+          <Text>No recipes found</Text>
+          <Button
+            title="Add recipes"
+            containerStyle={styles.emptyViewButton}
+            onPress={() => addBottomSheetRef.current?.present()}
+          />
+        </View>
+      )}
 
-      <FAB
-        style={styles.fab}
-        icon={{ name: "add", color: theme.colors.secondary }}
-        color={theme.colors.primary}
-        onPress={() => addBottomSheetRef.current?.present()}
-      />
+      {recipes.length > 0 ? (
+        <FAB
+          style={styles.fab}
+          icon={{ name: "add", color: theme.colors.secondary }}
+          color={theme.colors.primary}
+          onPress={() => addBottomSheetRef.current?.present()}
+        />
+      ) : null}
       <BottomSheetModal
         enablePanDownToClose
         ref={addBottomSheetRef}
@@ -240,5 +254,15 @@ const makeStyles = (colors: Colors) =>
       padding: 20,
       display: "flex",
       rowGap: 20,
+    },
+    emptyView: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      rowGap: 20,
+    },
+    emptyViewButton: {
+      width: 200,
+      borderRadius: 10,
     },
   });

@@ -66,11 +66,11 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
         addNewCalendarItem({
           userId: user.uid,
           date,
-          calendarItemData: label == null ? { recipeIds } : { label, recipeIds },
+          recipeData: label == null ? { recipeIds } : { label, recipeIds },
         }),
       );
       await dispatch(fetchCalendarItems(user.uid));
-      navigation.navigate("CalendarItems");
+      navigation.navigate("CalendarPage");
     } catch (e) {
       Sentry.captureException(e);
       Alert.alert("Failed to add to calendar");
@@ -97,10 +97,11 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
         <View>
           <View style={styles.label}>
             <Text style={styles.key}>Label</Text>
-            <Text style={styles.subLabel}>(optional)</Text>
+            <Text style={styles.optional}>(optional)</Text>
           </View>
+          <Text style={styles.subLabel}>Group your recipes under a label. Ex: Breakfast.</Text>
           <TextInput
-            placeholder="Add a label to group your recipes..."
+            placeholder="Add a label..."
             style={styles.input}
             value={label}
             onChangeText={(text) => setLabel(text)}
@@ -112,7 +113,7 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
             items={recipeItems}
             selectedItems={selectedRecipeIds}
             onSelectedItemsChange={(items) => setSelectedRecipeIds(items)}
-            selectText="Add recipes..."
+            selectText="Add recipes for this date..."
             searchInputPlaceholderText="Search recipes..."
             uniqueKey="id"
             fixedHeight
@@ -161,8 +162,13 @@ const makeStyles = (colors: Colors) =>
       alignItems: "center",
       marginTop: 10,
     },
-    subLabel: {
+    optional: {
       color: colors.grey3,
+    },
+    subLabel: {
+      fontSize: 12,
+      color: colors.grey2,
+      marginTop: 2,
     },
     recipes: {
       marginTop: 10,
