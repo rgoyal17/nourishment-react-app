@@ -38,21 +38,21 @@ export function UserStack() {
         <Tab.Screen
           options={{
             tabBarIcon: ({ focused }) => (
-              <Icon name="shopping-basket" color={focused ? secondary : grey2} />
-            ),
-          }}
-          name="Ingredients"
-          component={IngredientsTab}
-        />
-        <Tab.Screen
-          options={{
-            tabBarIcon: ({ focused }) => (
               <Icon name="calendar" type="font-awesome" color={focused ? secondary : grey2} />
             ),
             headerShown: false,
           }}
           name="Calendar"
           component={CalendarTab}
+        />
+        <Tab.Screen
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <Icon name="shopping-basket" color={focused ? secondary : grey2} />
+            ),
+          }}
+          name="Ingredients"
+          component={IngredientsTab}
         />
         <Tab.Screen
           options={{

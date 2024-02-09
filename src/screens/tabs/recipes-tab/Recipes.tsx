@@ -10,6 +10,7 @@ import { useAuthentication } from "../../../hooks/useAuthentication";
 import { ActivityIndicator } from "react-native";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { v4 as uuidv4 } from "uuid";
+import { ZeroState } from "../../../common/ZeroState";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
@@ -127,15 +128,16 @@ export function Recipes({ navigation }: RecipesProps) {
           refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         />
       ) : (
-        <View style={styles.emptyView}>
-          <Icon name="menu-book" size={50} />
-          <Text>No recipes found</Text>
-          <Button
-            title="Add recipes"
-            containerStyle={styles.emptyViewButton}
-            onPress={() => addBottomSheetRef.current?.present()}
-          />
-        </View>
+        <ZeroState
+          imgSrc={require("../../../../assets/recipe.png")}
+          imgStyle={styles.zeroStateImg}
+          title="No Recipes Found"
+          subtitle="Spice up your app by adding some delicious recipes"
+          actionButtonProps={{
+            title: "Add Recipes",
+            onPress: () => addBottomSheetRef.current?.present(),
+          }}
+        />
       )}
 
       {recipes.length > 0 ? (
@@ -255,14 +257,8 @@ const makeStyles = (colors: Colors) =>
       display: "flex",
       rowGap: 20,
     },
-    emptyView: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      rowGap: 20,
-    },
-    emptyViewButton: {
-      width: 200,
-      borderRadius: 10,
+    zeroStateImg: {
+      marginTop: -100, // there is a lot of extra space on the image
+      marginBottom: -10,
     },
   });

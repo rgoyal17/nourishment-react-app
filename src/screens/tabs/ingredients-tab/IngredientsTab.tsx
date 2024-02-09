@@ -9,7 +9,7 @@ export function IngredientsTab() {
 
   return (
     <View style={styles.container}>
-      <Text>Ingredients tab!</Text>
+      <Text>Coming soon!</Text>
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import { StackScreenProps } from "@react-navigation/stack";
-import { Button, Colors, FAB, Icon, useTheme, Text } from "@rneui/themed";
+import { Colors, FAB, useTheme } from "@rneui/themed";
 import React from "react";
 import { RefreshControl, StyleSheet, View } from "react-native";
 import { AgendaList, CalendarProvider, ExpandableCalendar } from "react-native-calendars";
@@ -15,6 +15,7 @@ import {
 import { MemoizedCalendarDayItem } from "./CalendarDayItem";
 import { Recipe } from "../../../redux/recipesSlice";
 import { getLocalDateString } from "../../../common/date";
+import { ZeroState } from "../../../common/ZeroState";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarPage">;
 
@@ -105,15 +106,16 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
             refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
           />
         ) : (
-          <View style={styles.emptyView}>
-            <Icon name="calendar" type="font-awesome" size={50} />
-            <Text>No calendar items found</Text>
-            <Button
-              title="Add items to calendar"
-              containerStyle={styles.emptyViewButton}
-              onPress={() => navigation.navigate("AddCalendarItem")}
-            />
-          </View>
+          <ZeroState
+            imgSrc={require("../../../../assets/calendar.png")}
+            imgStyle={styles.zeroStateImg}
+            title="No Recipes Found"
+            subtitle="Streamline your meals, one prep at a time"
+            actionButtonProps={{
+              title: "Add recipes to calendar",
+              onPress: () => navigation.navigate("AddCalendarItem"),
+            }}
+          />
         )}
       </CalendarProvider>
       {agendaItems.length > 0 ? (
@@ -151,5 +153,11 @@ const makeStyles = (colors: Colors) =>
     emptyViewButton: {
       width: 300,
       borderRadius: 10,
+    },
+    zeroStateImg: {
+      height: 250,
+      width: 250,
+      opacity: 0.6,
+      marginTop: -30, // there is a lot of extra space on the image
     },
   });
