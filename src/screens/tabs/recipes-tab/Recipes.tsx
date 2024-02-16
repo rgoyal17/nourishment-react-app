@@ -51,7 +51,7 @@ export function Recipes({ navigation }: RecipesProps) {
 
   const handleCreateFromScratch = React.useCallback(() => {
     addBottomSheetRef.current?.dismiss();
-    navigation.navigate("Add Recipe", { source: "scratch" });
+    navigation.navigate("AddOrEditRecipe", { source: "scratch" });
   }, [navigation]);
 
   const handleImportFromWeb = React.useCallback(() => {
@@ -68,7 +68,7 @@ export function Recipes({ navigation }: RecipesProps) {
       const recipe = await response.json();
       importBottomSheetRef.current?.dismiss();
       setRecipeUrl("");
-      navigation.navigate("Add Recipe", {
+      navigation.navigate("AddOrEditRecipe", {
         recipe: {
           id: uuidv4(),
           title: recipe.title ?? "",

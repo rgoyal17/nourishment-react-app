@@ -9,7 +9,7 @@ import { Recipe } from "../../../redux/recipesSlice";
 import { HEADER_HEIGHT } from "../../../common/constants";
 
 export type RecipesTabStackParamList = {
-  "Add Recipe": { recipe?: Recipe; source: "scratch" | "import" | "edit" };
+  AddOrEditRecipe: { recipe?: Recipe; source: "scratch" | "import" | "edit" };
   RecipeItem: { recipe: Recipe };
   Recipes: undefined;
 };
@@ -31,7 +31,7 @@ export function RecipesTab() {
       }}
     >
       <Stack.Screen
-        name="Add Recipe"
+        name="AddOrEditRecipe"
         component={AddOrEditRecipe}
         options={{ headerRight: () => <Button title="Done" /> }}
       />

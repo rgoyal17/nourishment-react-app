@@ -129,10 +129,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
 
   const handleEditRecipe = React.useCallback(() => {
     bottomSheetRef.current?.dismiss();
-    navigation.navigate("Add Recipe", {
-      recipe,
-      source: "edit",
-    });
+    navigation.navigate("AddOrEditRecipe", { recipe, source: "edit" });
   }, [navigation, recipe]);
 
   const handleChangeServings = React.useCallback(
