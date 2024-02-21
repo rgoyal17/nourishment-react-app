@@ -21,8 +21,9 @@ import { Colors, useTheme, Button, Icon, ListItem, CheckBox, Tooltip } from "@rn
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useAppDispatch } from "../../../redux/hooks";
-import { deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
+import { Recipe, deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
+import { useQuery } from "react-query";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -32,7 +33,7 @@ const IMG_HEIGHT = 400;
 export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { recipe } = route.params;
+  const [recipe, setRecipe] = React.useState(route.params.recipe);
   const dispatch = useAppDispatch();
   const { user } = useAuthentication();
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
@@ -44,13 +45,39 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
 
   const shouldShowFormattedCheckbox = React.useMemo(
-    () =>
-      recipe.ingredientsParsed.some((parsedIngredient) => parsedIngredient.quantity.trim() !== ""),
-    [recipe.ingredientsParsed],
+    () => parsedIngredients.some((parsedIngredient) => parsedIngredient.quantity.trim() !== ""),
+    [parsedIngredients],
   );
 
   const [isFormattedChecked, setIsFormattedChecked] = React.useState(shouldShowFormattedCheckbox);
   const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
+
+  const { data } = useQuery({
+    queryKey: ["fetch-recipes"],
+    queryFn: () => dispatch(fetchRecipes(user?.uid ?? "")),
+    enabled: recipe.ingredientsParsed.length === 0 && user?.uid != null,
+    refetchInterval: 10000,
+    cacheTime: 0,
+    staleTime: 0,
+  });
+
+  React.useEffect(() => {
+    const refreshedRecipes = (data?.payload ?? []) as Recipe[];
+    const refreshedRecipe = refreshedRecipes.find((r) => r.id === recipe.id);
+    if (
+      refreshedRecipe != null &&
+      refreshedRecipe.ingredientsParsed.length !== recipe.ingredientsParsed.length
+    ) {
+      setRecipe(refreshedRecipe);
+      setParsedIngredients(refreshedRecipe.ingredientsParsed);
+    }
+  }, [data?.payload, recipe.id, recipe.ingredientsParsed.length, shouldShowFormattedCheckbox]);
+
+  // need to update check when parsed ingredients change
+  React.useEffect(
+    () => setIsFormattedChecked(shouldShowFormattedCheckbox),
+    [shouldShowFormattedCheckbox],
+  );
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -244,7 +271,12 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
                 <Icon color={theme.colors.primary} name="help" />
               </Tooltip>
             </View>
-          ) : null}
+          ) : (
+            <View style={styles.parsing}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text>Parsing ingredients in the background…</Text>
+            </View>
+          )}
         </View>
         <IngredientsAndInstructions
           instructions={recipe.instructions}
@@ -366,5 +398,10 @@ const makeStyles = (colors: Colors) =>
     },
     link: {
       color: colors.grey3,
+    },
+    parsing: {
+      flexDirection: "row",
+      columnGap: 8,
+      alignItems: "center",
     },
   });

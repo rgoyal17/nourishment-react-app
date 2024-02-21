@@ -119,6 +119,9 @@ const uploadToFirebase = async (imageUri: string, storagePath: string): Promise<
 
 export const selectAllRecipes = (state: RootState) => state.recipes;
 
+export const selectRecipeById = (id: string) => (state: RootState) =>
+  state.recipes.find((recipe) => recipe.id === id);
+
 export const selectRecipesByIds = createSelector(
   [selectAllRecipes, (_state: RootState, recipeIds: string[]) => recipeIds],
   (recipes, recipeIds) => recipes.filter((recipe) => recipeIds.includes(recipe.id)),
