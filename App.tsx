@@ -9,7 +9,6 @@ import { store } from "./src/redux/store";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Sentry from "@sentry/react-native";
-import { QueryClient, QueryClientProvider } from "react-query";
 
 Sentry.init({
   dsn: "https://8ee5743505d3d27efcf6670609f4b97c@o4506578882396160.ingest.sentry.io/4506584065835008",
@@ -26,16 +25,12 @@ export default function App() {
     },
   });
 
-  const queryClient = new QueryClient();
-
   return (
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
-            <QueryClientProvider client={queryClient}>
-              <RootNavigation />
-            </QueryClientProvider>
+            <RootNavigation />
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
       </ThemeProvider>
