@@ -52,6 +52,15 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     recipeFromParent ?? INITIAL_RECIPE,
   );
 
+  const filteredIngredients = React.useMemo(
+    () => recipe.ingredientsRaw.filter((ing) => ing.trim().length !== 0),
+    [recipe.ingredientsRaw],
+  );
+  const filteredInstructions = React.useMemo(
+    () => recipe.instructions.filter((ins) => ins.trim().length !== 0),
+    [recipe.instructions],
+  );
+
   const [shouldAutoGenerateImage, setShouldAutoGenerateImage] = React.useState(
     source === "scratch",
   );
@@ -65,15 +74,14 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
   );
 
   const isFormValid = React.useCallback(() => {
-    const { title, instructions, ingredientsRaw } = recipe;
-    const isTitleEmpty = title.trim().length === 0;
-    const isIngredientsEmpty = ingredientsRaw.length === 0;
-    const isInstructionsEmpty = instructions.length === 0;
+    const isTitleEmpty = recipe.title.trim().length === 0;
+    const isIngredientsEmpty = filteredIngredients.length === 0;
+    const isInstructionsEmpty = filteredInstructions.length === 0;
     setValidationErrors({ isTitleEmpty });
     setValidationErrors({ isIngredientsEmpty });
     setValidationErrors({ isInstructionsEmpty });
     return !isTitleEmpty && !isIngredientsEmpty && !isInstructionsEmpty;
-  }, [recipe]);
+  }, [filteredIngredients.length, filteredInstructions.length, recipe.title]);
 
   const handleAddOrEditRecipe = React.useCallback(async () => {
     if (user?.uid == null) {
@@ -86,12 +94,19 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     }
     try {
       setIsAddingRecipe(true);
+      const updatedRecipe: Recipe = {
+        ...recipe,
+        ingredientsParsed:
+          recipeFromParent?.ingredientsRaw !== recipe.ingredientsRaw
+            ? []
+            : recipe.ingredientsParsed,
+        ingredientsRaw: filteredIngredients,
+        instructions: filteredInstructions,
+      };
       if (source === "edit") {
-        await dispatch(
-          editRecipe({ userId: user.uid, recipe: { ...recipe, ingredientsParsed: [] } }),
-        );
+        await dispatch(editRecipe({ userId: user.uid, recipe: updatedRecipe }));
       } else {
-        await dispatch(addNewRecipe({ userId: user.uid, recipe }));
+        await dispatch(addNewRecipe({ userId: user.uid, recipe: updatedRecipe }));
       }
       await dispatch(fetchRecipes(user.uid));
       navigation.navigate("Recipes");
@@ -100,7 +115,17 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     } finally {
       setIsAddingRecipe(false);
     }
-  }, [user?.uid, isFormValid, recipe, source, navigation, dispatch]);
+  }, [
+    user?.uid,
+    isFormValid,
+    recipe,
+    recipeFromParent?.ingredientsRaw,
+    filteredIngredients,
+    filteredInstructions,
+    source,
+    dispatch,
+    navigation,
+  ]);
 
   React.useEffect(() => {
     navigation.setOptions({
