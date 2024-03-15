@@ -24,6 +24,7 @@ import { useAppDispatch } from "../../../redux/hooks";
 import { Recipe, deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
+import { fetchCalendarItems } from "../../../redux/calendarSlice";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -121,6 +122,7 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
       setIsDeletingRecipe(true);
       await dispatch(deleteRecipe({ userId: user.uid, recipeId: recipe.id }));
       await dispatch(fetchRecipes(user.uid));
+      await dispatch(fetchCalendarItems(user.uid));
       navigation.navigate("Recipes");
       bottomSheetRef.current?.dismiss();
     } catch (e) {

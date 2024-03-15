@@ -12,6 +12,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
+import { CalendarItem } from "./calendarSlice";
 
 export interface Ingredient {
   item: string;
@@ -78,6 +79,38 @@ export const deleteRecipe = createAsyncThunk(
     const db = getFirestore();
     const recipeDoc = doc(db, `users/${userId}/recipes/${recipeId}`);
     await deleteDoc(recipeDoc);
+
+    // delete the recipe from calendar
+    const calendarItemsCollection = collection(db, `users/${userId}/calendarItems`);
+    const calendarItems: CalendarItem[] = await getDocs(calendarItemsCollection)
+      .then((result) => result.docs.map((doc) => doc.data() as CalendarItem))
+      .catch(() => []);
+    calendarItems.forEach((item) => {
+      const calendarItemDoc = doc(db, `users/${userId}/calendarItems/${item.date}`);
+      const recipeData = item.recipeData;
+      recipeData.forEach(async (data, index) => {
+        const recipeIds = data.recipeIds;
+        if (recipeIds.includes(recipeId)) {
+          if (recipeIds.length === 1) {
+            if (recipeData.length === 1) {
+              // this is the only `data` in `recipeData`, so delete the entire calendarItem
+              await deleteDoc(calendarItemDoc);
+            } else {
+              // this is the only recipe in `data`, so delete this `data` in `recipeData`
+              const newRecipeData = [...recipeData];
+              newRecipeData.splice(index, 1);
+              await setDoc(calendarItemDoc, { ...item, recipeData: newRecipeData });
+            }
+          } else {
+            const filteredRecipeIds = recipeIds.filter((id) => id !== recipeId);
+            const newRecipeData = [...recipeData];
+            newRecipeData[index] = { ...recipeData[index], recipeIds: filteredRecipeIds };
+            await setDoc(calendarItemDoc, { ...item, recipeData: newRecipeData });
+          }
+        }
+      });
+    });
+
     return recipeId;
   },
 );
