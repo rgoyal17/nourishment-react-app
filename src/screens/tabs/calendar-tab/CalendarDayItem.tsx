@@ -1,10 +1,11 @@
-import { ActivityIndicator, View, StyleSheet } from "react-native";
-import { Colors, Divider, Icon, Image, Text, useTheme } from "@rneui/themed";
+import { ActivityIndicator, View, StyleSheet, Text, Alert } from "react-native";
+import { Button, Colors, Divider, Icon, Image, useTheme } from "@rneui/themed";
 import React from "react";
-import { CalendarItem } from "../../../redux/calendarSlice";
-import { useAppSelector } from "../../../redux/hooks";
+import { CalendarItem, deleteCalendarItem, fetchCalendarItems } from "../../../redux/calendarSlice";
+import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { Recipe, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import { useAuthentication } from "../../../hooks/useAuthentication";
 
 interface CalendarDayItemProps {
   calendarItem: CalendarItem;
@@ -13,10 +14,40 @@ interface CalendarDayItemProps {
 
 function CalendarDayItem({ calendarItem, onNavigateToRecipe }: CalendarDayItemProps) {
   const { theme } = useTheme();
-  const { secondary } = theme.colors;
+  const { primary, secondary, error } = theme.colors;
   const styles = makeStyles(theme.colors);
+  const dispatch = useAppDispatch();
+  const { user } = useAuthentication();
 
-  const { recipeData } = calendarItem;
+  const [isDeletingIndex, setIsDeletingIndex] = React.useState(-1);
+
+  const { date, recipeData } = calendarItem;
+
+  const handleDeleteCalendarRecipeData = React.useCallback(
+    (index: number, dateId: string, label?: string) => async () => {
+      if (user?.uid != null) {
+        setIsDeletingIndex(index);
+        await dispatch(deleteCalendarItem({ userId: user.uid, dateId, label }));
+        await dispatch(fetchCalendarItems(user.uid));
+        setIsDeletingIndex(-1);
+      }
+    },
+    [dispatch, user?.uid],
+  );
+
+  const handleDeleteClick = React.useCallback(
+    (index: number, dateId: string, label?: string) => async () => {
+      Alert.alert("Are you sure you want to delete this calendar item?", undefined, [
+        { text: "Cancel" },
+        {
+          text: "Delete",
+          onPress: handleDeleteCalendarRecipeData(index, dateId, label),
+          style: "destructive",
+        },
+      ]);
+    },
+    [handleDeleteCalendarRecipeData],
+  );
 
   return (
     <View style={styles.container}>
@@ -27,6 +58,21 @@ function CalendarDayItem({ calendarItem, onNavigateToRecipe }: CalendarDayItemPr
             {data.label != null || index !== 0 ? (
               <Divider color={secondary} inset width={1} insetType="middle" />
             ) : null}
+          </View>
+          <View style={styles.actionButtons}>
+            <Button
+              icon={<Icon style={{ opacity: 0.8 }} color={primary} name="edit" size={20} />}
+              size="sm"
+              type="clear"
+            />
+            <Button
+              icon={<Icon style={{ opacity: 0.8 }} color={error} name="delete" size={20} />}
+              loading={isDeletingIndex === index}
+              size="sm"
+              type="clear"
+              loadingProps={{ size: "small", color: error, style: { height: 20 } }}
+              onPress={handleDeleteClick(index, date, data.label)}
+            />
           </View>
           <CalendarRecipeData recipeIds={data.recipeIds} onNavigateToRecipe={onNavigateToRecipe} />
         </View>
@@ -65,7 +111,9 @@ function CalendarRecipeData({ recipeIds, onNavigateToRecipe }: CalendarRecipeDat
               }
             />
           )}
-          <Text>{recipe.title}</Text>
+          <Text style={{ flex: 1 }} numberOfLines={2}>
+            {recipe.title}
+          </Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -83,6 +131,7 @@ const makeStyles = (colors: Colors) =>
     },
     content: {
       padding: 20,
+      paddingTop: 0,
       rowGap: 5,
     },
     fab: {
@@ -110,7 +159,6 @@ const makeStyles = (colors: Colors) =>
     },
     labelDivider: {
       paddingTop: 10,
-      rowGap: 2,
     },
     label: {
       color: colors.primary,
@@ -118,10 +166,17 @@ const makeStyles = (colors: Colors) =>
       fontWeight: "500",
       textAlign: "center",
       fontSize: 12,
+      marginBottom: 3,
     },
     recipe: {
       flexDirection: "row",
       alignItems: "center",
       columnGap: 10,
+    },
+    actionButtons: {
+      paddingTop: 5,
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
     },
   });

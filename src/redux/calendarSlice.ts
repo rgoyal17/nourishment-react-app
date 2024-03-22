@@ -1,5 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { collection, doc, getDoc, getDocs, getFirestore, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  setDoc,
+} from "firebase/firestore";
 import { RootState } from "./store";
 import { uniq } from "lodash";
 import * as Sentry from "@sentry/react-native";
@@ -62,6 +70,34 @@ export const addNewCalendarItem = createAsyncThunk(
         await setDoc(calendarItemDoc, {
           date: dateId,
           recipeData: [...filteredData, updatedLabelData],
+        });
+      }
+    } catch (e) {
+      Sentry.captureException(e);
+    }
+  },
+);
+
+interface deleteCalendarItemParams {
+  userId: string;
+  dateId: string;
+  label?: string;
+}
+
+export const deleteCalendarItem = createAsyncThunk(
+  "calendar/deleteCalendarItem",
+  async ({ userId, dateId, label }: deleteCalendarItemParams) => {
+    try {
+      const db = getFirestore();
+      const calendarItemDoc = doc(db, `users/${userId}/calendarItems/${dateId}`);
+      const existingData = (await getDoc(calendarItemDoc)).data() as CalendarItem;
+      if (existingData.recipeData.length === 1 && existingData.recipeData[0].label === label) {
+        // this is the only recipe data on the doc, so delete the entire doc.
+        await deleteDoc(calendarItemDoc);
+      } else {
+        await setDoc(calendarItemDoc, {
+          date: existingData.date,
+          recipeData: [...existingData.recipeData].filter((data) => data.label !== label),
         });
       }
     } catch (e) {
