@@ -10,7 +10,11 @@ import {
 import React from "react";
 import { Button, Colors, useTheme } from "@rneui/themed";
 import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { addNewCalendarItem, fetchCalendarItems } from "../../../redux/calendarSlice";
+import {
+  addNewCalendarItem,
+  editCalendarItem,
+  fetchCalendarItems,
+} from "../../../redux/calendarSlice";
 import MultiSelect from "react-native-multiple-select";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { selectAllRecipes } from "../../../redux/recipesSlice";
@@ -18,24 +22,31 @@ import { StackScreenProps } from "@react-navigation/stack";
 import { CalendarTabStackParamList } from "./CalendarTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import * as Sentry from "@sentry/react-native";
+import { getLocalDateString } from "../../../common/date";
 
 interface RecipeItem {
   id: string;
   name: string;
 }
 
-type AddCalendarItemProps = StackScreenProps<CalendarTabStackParamList, "AddCalendarItem">;
+type AddOrEditCalendarItemProps = StackScreenProps<
+  CalendarTabStackParamList,
+  "AddOrEditCalendarItem"
+>;
 
-export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
+export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarItemProps) {
   const { theme } = useTheme();
   const { primary } = theme.colors;
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
+  const editItem = route.params.editItem;
 
   const [date, setDate] = React.useState(new Date());
-  const [label, setLabel] = React.useState<string>();
-  const [selectedRecipeIds, setSelectedRecipeIds] = React.useState<string[]>([]);
+  const [label, setLabel] = React.useState<string | undefined>(editItem?.calendarItemData.label);
+  const [selectedRecipeIds, setSelectedRecipeIds] = React.useState<string[]>(
+    editItem?.calendarItemData.recipeIds ?? [],
+  );
   const [isAddingCalendarItem, setIsAddingCalendarItem] = React.useState(false);
 
   const recipes = useAppSelector(selectAllRecipes);
@@ -50,7 +61,7 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
     }
   }, []);
 
-  const handleAddCalendarItem = React.useCallback(async () => {
+  const handleAddOrEditCalendarItem = React.useCallback(async () => {
     if (user?.uid == null) {
       Alert.alert("Please sign in to add to calendar");
       return;
@@ -62,13 +73,24 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
     setIsAddingCalendarItem(true);
     try {
       const recipeIds = selectedRecipeIds;
-      await dispatch(
-        addNewCalendarItem({
-          userId: user.uid,
-          date,
-          recipeData: label == null ? { recipeIds } : { label, recipeIds },
-        }),
-      );
+      if (editItem != null) {
+        await dispatch(
+          editCalendarItem({
+            userId: user.uid,
+            date: editItem.date,
+            prevData: editItem.calendarItemData,
+            newData: { label, recipeIds },
+          }),
+        );
+      } else {
+        await dispatch(
+          addNewCalendarItem({
+            userId: user.uid,
+            date: getLocalDateString(date),
+            recipeData: label == null ? { recipeIds } : { label, recipeIds },
+          }),
+        );
+      }
       await dispatch(fetchCalendarItems(user.uid));
       navigation.navigate("CalendarPage");
     } catch (e) {
@@ -77,23 +99,26 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
     } finally {
       setIsAddingCalendarItem(false);
     }
-  }, [date, dispatch, label, navigation, selectedRecipeIds, user?.uid]);
+  }, [date, dispatch, editItem, label, navigation, selectedRecipeIds, user?.uid]);
 
   React.useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Button title="Done" onPress={handleAddCalendarItem} loading={isAddingCalendarItem} />
+        <Button title="Done" onPress={handleAddOrEditCalendarItem} loading={isAddingCalendarItem} />
       ),
+      title: editItem != null ? "Edit Calendar Item" : "Add To Calendar",
     });
-  }, [handleAddCalendarItem, isAddingCalendarItem, navigation]);
+  }, [editItem, handleAddOrEditCalendarItem, isAddingCalendarItem, navigation]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <View style={styles.datetime}>
-          <Text style={styles.key}>Date</Text>
-          <RNDateTimePicker mode="date" value={new Date(date)} onChange={handleConfirmDate} />
-        </View>
+        {editItem != null ? null : (
+          <View style={styles.datetime}>
+            <Text style={styles.key}>Date</Text>
+            <RNDateTimePicker mode="date" value={new Date(date)} onChange={handleConfirmDate} />
+          </View>
+        )}
         <View>
           <View style={styles.label}>
             <Text style={styles.key}>Label</Text>
@@ -110,25 +135,25 @@ export function AddCalendarItem({ navigation }: AddCalendarItemProps) {
         <View style={styles.recipes}>
           <Text style={styles.key}>Recipes</Text>
           <MultiSelect
+            displayKey="name"
+            fixedHeight={true}
             items={recipeItems}
-            selectedItems={selectedRecipeIds}
             onSelectedItemsChange={(items) => setSelectedRecipeIds(items)}
-            selectText="Add recipes for this date..."
             searchInputPlaceholderText="Search recipes..."
-            uniqueKey="id"
-            fixedHeight
-            styleInputGroup={{ height: 35, paddingRight: 10 }}
+            selectedItemIconColor={primary}
+            selectedItems={selectedRecipeIds}
+            selectedItemTextColor={primary}
+            selectText="Add recipes for this date..."
             styleDropdownMenuSubsection={styles.selectorInput}
+            styleIndicator={{ display: "none" }}
+            styleInputGroup={{ height: 35, paddingRight: 10 }}
             styleTextDropdown={styles.selectText}
             styleTextDropdownSelected={styles.selectText}
-            styleIndicator={{ display: "none" }}
-            displayKey="name"
-            selectedItemTextColor={primary}
-            selectedItemIconColor={primary}
             submitButtonColor={primary}
+            submitButtonText="Select"
             tagBorderColor={primary}
             tagTextColor={primary}
-            submitButtonText="Select"
+            uniqueKey="id"
           />
         </View>
       </View>

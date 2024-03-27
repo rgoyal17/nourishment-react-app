@@ -9,6 +9,7 @@ import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
   CalendarItem,
+  CalendarItemData,
   fetchCalendarItems,
   selectAllCalendarItems,
 } from "../../../redux/calendarSlice";
@@ -52,14 +53,21 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     [navigation],
   );
 
+  const handleEditCalendarItem = React.useCallback(
+    (calendarItemData: CalendarItemData, date: string) =>
+      navigation.navigate("AddOrEditCalendarItem", { editItem: { calendarItemData, date } }),
+    [navigation],
+  );
+
   const renderItem = React.useCallback(
     ({ item }: any) => (
       <MemoizedCalendarDayItem
         calendarItem={item as CalendarItem}
+        onEditRecipe={handleEditCalendarItem}
         onNavigateToRecipe={handleNavigateToRecipe}
       />
     ),
-    [handleNavigateToRecipe],
+    [handleEditCalendarItem, handleNavigateToRecipe],
   );
 
   React.useEffect(() => {
@@ -113,7 +121,7 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
             subtitle="Streamline your meals, one prep at a time"
             actionButtonProps={{
               title: "Add recipes to calendar",
-              onPress: () => navigation.navigate("AddCalendarItem"),
+              onPress: () => navigation.navigate("AddOrEditCalendarItem", {}),
             }}
           />
         )}
@@ -123,7 +131,7 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
           style={styles.fab}
           icon={{ name: "add", color: theme.colors.secondary }}
           color={theme.colors.primary}
-          onPress={() => navigation.navigate("AddCalendarItem")}
+          onPress={() => navigation.navigate("AddOrEditCalendarItem", {})}
         />
       ) : null}
     </View>

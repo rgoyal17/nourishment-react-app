@@ -2,13 +2,14 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Button, Icon, useTheme } from "@rneui/themed";
 import React from "react";
 import { CalendarPage } from "./CalendarPage";
-import { AddCalendarItem } from "./AddCalendarItem";
+import { AddOrEditCalendarItem } from "./AddOrEditCalendarItem";
 import { HEADER_HEIGHT } from "../../../common/constants";
 import { RecipesTabStackParamList } from "../recipes-tab/RecipesTab";
+import { CalendarItemData } from "../../../redux/calendarSlice";
 
 export type CalendarTabStackParamList = {
   RecipesTab: { screen: keyof RecipesTabStackParamList; params: any };
-  AddCalendarItem: undefined;
+  AddOrEditCalendarItem: { editItem?: { calendarItemData: CalendarItemData; date: string } };
   CalendarPage: undefined;
 };
 
@@ -29,8 +30,8 @@ export function CalendarTab() {
       }}
     >
       <Stack.Screen
-        name="AddCalendarItem"
-        component={AddCalendarItem}
+        name="AddOrEditCalendarItem"
+        component={AddOrEditCalendarItem}
         options={{ headerRight: () => <Button title="Done" />, title: "Add To Calendar" }}
       />
       <Stack.Screen name="CalendarPage" component={CalendarPage} options={{ title: "Calendar" }} />

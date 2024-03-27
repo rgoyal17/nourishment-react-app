@@ -1,18 +1,25 @@
 import { ActivityIndicator, View, StyleSheet, Text, Alert } from "react-native";
 import { Button, Colors, Divider, Icon, Image, useTheme } from "@rneui/themed";
 import React from "react";
-import { CalendarItem, deleteCalendarItem, fetchCalendarItems } from "../../../redux/calendarSlice";
+import {
+  CalendarItem,
+  CalendarItemData,
+  deleteCalendarItem,
+  fetchCalendarItems,
+} from "../../../redux/calendarSlice";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { Recipe, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { useAuthentication } from "../../../hooks/useAuthentication";
+import * as Sentry from "@sentry/react-native";
 
 interface CalendarDayItemProps {
   calendarItem: CalendarItem;
+  onEditRecipe: (calendarItemData: CalendarItemData, date: string) => void;
   onNavigateToRecipe: (recipe: Recipe) => void;
 }
 
-function CalendarDayItem({ calendarItem, onNavigateToRecipe }: CalendarDayItemProps) {
+function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: CalendarDayItemProps) {
   const { theme } = useTheme();
   const { primary, secondary, error } = theme.colors;
   const styles = makeStyles(theme.colors);
@@ -24,29 +31,38 @@ function CalendarDayItem({ calendarItem, onNavigateToRecipe }: CalendarDayItemPr
   const { date, recipeData } = calendarItem;
 
   const handleDeleteCalendarRecipeData = React.useCallback(
-    (index: number, dateId: string, label?: string) => async () => {
+    (index: number, label?: string) => async () => {
       if (user?.uid != null) {
-        setIsDeletingIndex(index);
-        await dispatch(deleteCalendarItem({ userId: user.uid, dateId, label }));
-        await dispatch(fetchCalendarItems(user.uid));
-        setIsDeletingIndex(-1);
+        try {
+          setIsDeletingIndex(index);
+          await dispatch(deleteCalendarItem({ userId: user.uid, date, label }));
+          await dispatch(fetchCalendarItems(user.uid));
+          setIsDeletingIndex(-1);
+        } catch (e) {
+          Sentry.captureException(e);
+        }
       }
     },
-    [dispatch, user?.uid],
+    [date, dispatch, user?.uid],
   );
 
   const handleDeleteClick = React.useCallback(
-    (index: number, dateId: string, label?: string) => async () => {
+    (index: number, label?: string) => async () => {
       Alert.alert("Are you sure you want to delete this calendar item?", undefined, [
         { text: "Cancel" },
         {
           text: "Delete",
-          onPress: handleDeleteCalendarRecipeData(index, dateId, label),
+          onPress: handleDeleteCalendarRecipeData(index, label),
           style: "destructive",
         },
       ]);
     },
     [handleDeleteCalendarRecipeData],
+  );
+
+  const handleEditCalendarItem = React.useCallback(
+    (index: number) => () => onEditRecipe(recipeData[index], date),
+    [onEditRecipe, recipeData, date],
   );
 
   return (
@@ -64,6 +80,7 @@ function CalendarDayItem({ calendarItem, onNavigateToRecipe }: CalendarDayItemPr
               icon={<Icon style={{ opacity: 0.8 }} color={primary} name="edit" size={20} />}
               size="sm"
               type="clear"
+              onPress={handleEditCalendarItem(index)}
             />
             <Button
               icon={<Icon style={{ opacity: 0.8 }} color={error} name="delete" size={20} />}
@@ -71,7 +88,7 @@ function CalendarDayItem({ calendarItem, onNavigateToRecipe }: CalendarDayItemPr
               size="sm"
               type="clear"
               loadingProps={{ size: "small", color: error, style: { height: 20 } }}
-              onPress={handleDeleteClick(index, date, data.label)}
+              onPress={handleDeleteClick(index, data.label)}
             />
           </View>
           <CalendarRecipeData recipeIds={data.recipeIds} onNavigateToRecipe={onNavigateToRecipe} />
