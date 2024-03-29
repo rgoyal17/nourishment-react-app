@@ -15,19 +15,15 @@ import {
   editCalendarItem,
   fetchCalendarItems,
 } from "../../../redux/calendarSlice";
-import MultiSelect from "react-native-multiple-select";
+// import MultiSelect from "react-native-multiple-select";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
-import { selectAllRecipes } from "../../../redux/recipesSlice";
+import { Recipe, selectAllRecipes, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { StackScreenProps } from "@react-navigation/stack";
 import { CalendarTabStackParamList } from "./CalendarTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import * as Sentry from "@sentry/react-native";
 import { getLocalDateString } from "../../../common/date";
-
-interface RecipeItem {
-  id: string;
-  name: string;
-}
+import { MultiSelect } from "../../../common/MultiSelect";
 
 type AddOrEditCalendarItemProps = StackScreenProps<
   CalendarTabStackParamList,
@@ -36,24 +32,20 @@ type AddOrEditCalendarItemProps = StackScreenProps<
 
 export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarItemProps) {
   const { theme } = useTheme();
-  const { primary } = theme.colors;
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
   const editItem = route.params.editItem;
+  const editItemRecipes = useAppSelector((state) =>
+    selectRecipesByIds(state, editItem?.calendarItemData.recipeIds ?? []),
+  );
 
   const [date, setDate] = React.useState(new Date());
   const [label, setLabel] = React.useState<string | undefined>(editItem?.calendarItemData.label);
-  const [selectedRecipeIds, setSelectedRecipeIds] = React.useState<string[]>(
-    editItem?.calendarItemData.recipeIds ?? [],
-  );
+  const [selectedRecipes, setSelectedRecipes] = React.useState<Recipe[]>(editItemRecipes);
   const [isAddingCalendarItem, setIsAddingCalendarItem] = React.useState(false);
 
   const recipes = useAppSelector(selectAllRecipes);
-  const recipeItems: RecipeItem[] = recipes.map((recipe) => ({
-    name: recipe.title,
-    id: recipe.id,
-  }));
 
   const handleConfirmDate = React.useCallback(({ type }: DateTimePickerEvent, date?: Date) => {
     if (type === "set" && date != null) {
@@ -66,13 +58,13 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
       Alert.alert("Please sign in to add to calendar");
       return;
     }
-    if (selectedRecipeIds.length === 0) {
+    if (selectedRecipes.length === 0) {
       Alert.alert("Please select recipes");
       return;
     }
     setIsAddingCalendarItem(true);
     try {
-      const recipeIds = selectedRecipeIds;
+      const recipeIds = selectedRecipes.map((r) => r.id);
       if (editItem != null) {
         await dispatch(
           editCalendarItem({
@@ -99,7 +91,7 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
     } finally {
       setIsAddingCalendarItem(false);
     }
-  }, [date, dispatch, editItem, label, navigation, selectedRecipeIds, user?.uid]);
+  }, [date, dispatch, editItem, label, navigation, selectedRecipes, user?.uid]);
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -135,25 +127,12 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
         <View style={styles.recipes}>
           <Text style={styles.key}>Recipes</Text>
           <MultiSelect
-            displayKey="name"
-            fixedHeight={true}
-            items={recipeItems}
-            onSelectedItemsChange={(items) => setSelectedRecipeIds(items)}
-            searchInputPlaceholderText="Search recipes..."
-            selectedItemIconColor={primary}
-            selectedItems={selectedRecipeIds}
-            selectedItemTextColor={primary}
-            selectText="Add recipes for this date..."
-            styleDropdownMenuSubsection={styles.selectorInput}
-            styleIndicator={{ display: "none" }}
-            styleInputGroup={{ height: 35, paddingRight: 10 }}
-            styleTextDropdown={styles.selectText}
-            styleTextDropdownSelected={styles.selectText}
-            submitButtonColor={primary}
-            submitButtonText="Select"
-            tagBorderColor={primary}
-            tagTextColor={primary}
-            uniqueKey="id"
+            items={recipes}
+            searchInputLabel="Search recipes..."
+            selectedItems={selectedRecipes}
+            selectInputLabel="Select recipes..."
+            submitButtonLabel="Done"
+            onSelectItems={(items) => setSelectedRecipes(items)}
           />
         </View>
       </View>
