@@ -38,6 +38,7 @@ export function UserStack() {
               <Icon name="menu-book" color={focused ? secondary : grey2} />
             ),
             headerShown: false,
+            title: "Recipes",
           }}
           name="RecipesTab"
           component={RecipesTab}
@@ -48,6 +49,7 @@ export function UserStack() {
               <Icon name="calendar" type="font-awesome" color={focused ? secondary : grey2} />
             ),
             headerShown: false,
+            title: "Calendar",
           }}
           name="CalendarTab"
           component={CalendarTab}
@@ -57,6 +59,7 @@ export function UserStack() {
             tabBarIcon: ({ focused }) => (
               <Icon name="shopping-basket" color={focused ? secondary : grey2} />
             ),
+            title: "Ingredients",
           }}
           name="IngredientsTab"
           component={IngredientsTab}
@@ -66,6 +69,7 @@ export function UserStack() {
             tabBarIcon: ({ focused }) => (
               <Icon name="user" type="font-awesome" color={focused ? secondary : grey2} />
             ),
+            title: "Account",
           }}
           name="AccountTab"
           component={AccountTab}
