@@ -8,7 +8,14 @@ import { CalendarTab } from "../screens/tabs/calendar-tab/CalendarTab";
 import { AccountTab } from "../screens/tabs/account-tab/AccountTab";
 import { HEADER_HEIGHT } from "../common/constants";
 
-const Tab = createBottomTabNavigator();
+export type UserStackParamList = {
+  RecipesTab: undefined;
+  CalendarTab: undefined;
+  IngredientsTab: undefined;
+  AccountTab: undefined;
+};
+
+const Tab = createBottomTabNavigator<UserStackParamList>();
 
 export function UserStack() {
   const { theme } = useTheme();
@@ -42,7 +49,7 @@ export function UserStack() {
             ),
             headerShown: false,
           }}
-          name="Calendar"
+          name="CalendarTab"
           component={CalendarTab}
         />
         <Tab.Screen
@@ -51,7 +58,7 @@ export function UserStack() {
               <Icon name="shopping-basket" color={focused ? secondary : grey2} />
             ),
           }}
-          name="Ingredients"
+          name="IngredientsTab"
           component={IngredientsTab}
         />
         <Tab.Screen
@@ -60,7 +67,7 @@ export function UserStack() {
               <Icon name="user" type="font-awesome" color={focused ? secondary : grey2} />
             ),
           }}
-          name="Account"
+          name="AccountTab"
           component={AccountTab}
         />
       </Tab.Navigator>

@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import {
   collection,
   deleteDoc,
@@ -10,6 +10,12 @@ import {
 } from "firebase/firestore";
 import { RootState } from "./store";
 import { uniq } from "lodash";
+
+export enum CalendarView {
+  DAY,
+  WEEK,
+  MONTH,
+}
 
 export interface CalendarItemData {
   label?: string;
@@ -131,5 +137,13 @@ const calendarSlice = createSlice({
 });
 
 export const selectAllCalendarItems = (state: RootState) => state.calendarItems;
+
+export const selectCalendarItemsByDate = (date: string) => (state: RootState) =>
+  state.calendarItems.find((item) => item.date === date);
+
+export const selectCalendarItemsByDates = createSelector(
+  [selectAllCalendarItems, (_state: RootState, dates: string[]) => dates],
+  (calendarItems, dates) => calendarItems.filter((item) => dates.includes(item.date)),
+);
 
 export const calendarItemsReducer = calendarSlice.reducer;

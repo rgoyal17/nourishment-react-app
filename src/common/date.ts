@@ -5,3 +5,17 @@ export function getLocalDateString(dateObj: Date) {
 
   return `${year}-${twoDigitMonth}-${twoDigitDate}`;
 }
+
+export function getMonthDateString(dateObj: Date) {
+  return `${dateObj.toLocaleString("default", { month: "short" })} ${dateObj.getDate()}`;
+}
+
+export function getFutureDates(dateObj: Date) {
+  const weekDateObj = new Date(dateObj);
+  weekDateObj.setDate(weekDateObj.getDate() + 6);
+
+  const monthDateObj = new Date(dateObj);
+  monthDateObj.setMonth(dateObj.getMonth() + 1);
+
+  return { weekDateObj, monthDateObj };
+}
