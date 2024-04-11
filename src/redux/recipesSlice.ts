@@ -15,8 +15,10 @@ import { v4 as uuidv4 } from "uuid";
 import { CalendarItem } from "./calendarSlice";
 
 export interface Ingredient {
+  category: string;
   item: string;
   quantity: string;
+  notes: string;
   unit: string;
 }
 

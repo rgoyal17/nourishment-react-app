@@ -2,6 +2,8 @@ import { Text, View, StyleSheet } from "react-native";
 import React from "react";
 import { Button, Colors, useTheme } from "@rneui/themed";
 import { Ingredient } from "../../../redux/recipesSlice";
+import { uniq } from "lodash";
+import { INGREDIENT_CATEGORIES } from "../../../common/constants";
 
 interface IngredientsAndInstructionsProps {
   instructions: string[];
@@ -21,6 +23,17 @@ export function IngredientsAndInstructions({
   const styles = makeStyles(theme.colors);
 
   const [selectedTab, setSelectedTab] = React.useState(0);
+
+  const ingredientCategories = uniq(parsedIngredients.map((i) => i.category)).sort(
+    (a, b) => INGREDIENT_CATEGORIES.indexOf(a) - INGREDIENT_CATEGORIES.indexOf(b),
+  );
+
+  const mappedIngredients = new Map<string, Ingredient[]>();
+  parsedIngredients.forEach((i) => {
+    const category = i.category;
+    const existingIngredients = mappedIngredients.get(category) ?? [];
+    mappedIngredients.set(category, [...existingIngredients, i]);
+  });
 
   return (
     <View>
@@ -43,27 +56,45 @@ export function IngredientsAndInstructions({
         />
       </View>
       <View>
-        {selectedTab === 0
-          ? isFormattedChecked
-            ? parsedIngredients.map((ingredient, index) => (
-                <View style={styles.ingredientContainer} key={index}>
-                  <Text style={styles.ingredient}>{ingredient.item}</Text>
-                  <Text style={styles.rightText}>
-                    {ingredient.quantity} {ingredient.unit}
-                  </Text>
+        {selectedTab === 0 ? (
+          isFormattedChecked ? (
+            <View style={styles.parsedContainer}>
+              {ingredientCategories.map((category, index) => (
+                <View key={index}>
+                  <Text style={styles.categoryTitle}>{category}</Text>
+                  <View>
+                    {mappedIngredients.get(category)?.map((ingredient, key) => (
+                      <View style={styles.parsedIngredient} key={index + key}>
+                        <View>
+                          <Text>{ingredient.item}</Text>
+                          {ingredient.notes.trim() !== "" ? (
+                            <Text style={styles.notes}>{ingredient.notes}</Text>
+                          ) : null}
+                        </View>
+                        <Text style={styles.rightText}>
+                          {ingredient.quantity} {ingredient.unit}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              ))
-            : rawIngredients.map((ingredient, index) => (
-                <View style={styles.ingredientContainer} key={index}>
-                  <Text style={styles.ingredient}>{ingredient}</Text>
-                </View>
-              ))
-          : instructions.map((instruction, index) => (
-              <View style={styles.instructionContainer} key={index}>
-                <Text style={styles.index}>{index + 1}</Text>
-                <Text style={styles.instruction}>{instruction}</Text>
+              ))}
+            </View>
+          ) : (
+            rawIngredients.map((ingredient, index) => (
+              <View style={styles.ingredientContainer} key={index}>
+                <Text style={styles.ingredient}>{ingredient}</Text>
               </View>
-            ))}
+            ))
+          )
+        ) : (
+          instructions.map((instruction, index) => (
+            <View style={styles.instructionContainer} key={index}>
+              <Text style={styles.index}>{index + 1}</Text>
+              <Text style={styles.instruction}>{instruction}</Text>
+            </View>
+          ))
+        )}
       </View>
     </View>
   );
@@ -81,6 +112,28 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 0,
       borderTopLeftRadius: 5,
       borderTopRightRadius: 5,
+    },
+    parsedContainer: {
+      rowGap: 20,
+    },
+    categoryTitle: {
+      padding: 10,
+      paddingBottom: 0,
+      fontSize: 16,
+      fontWeight: "500",
+    },
+    parsedIngredient: {
+      paddingHorizontal: 10,
+      paddingVertical: 15,
+      borderBottomColor: colors.primary,
+      borderBottomWidth: 0.2,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    notes: {
+      fontSize: 10,
+      color: colors.grey2,
     },
     ingredientContainer: {
       paddingHorizontal: 10,

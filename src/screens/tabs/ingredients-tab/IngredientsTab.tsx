@@ -4,13 +4,18 @@ import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { CalendarProvider, ExpandableCalendar } from "react-native-calendars";
 import { getFutureDates, getLocalDateString, getMonthDateString } from "../../../common/date";
-import { useAppDispatch } from "../../../redux/hooks";
-import { CalendarView, fetchCalendarItems } from "../../../redux/calendarSlice";
+import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
+import {
+  CalendarView,
+  fetchCalendarItems,
+  selectAllCalendarItems,
+} from "../../../redux/calendarSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useIngredientsByDate } from "../../../hooks/useIngredientsByDate";
 import { ZeroState } from "../../../common/ZeroState";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { UserStackParamList } from "../../../navigation/UserStack";
+import { MarkedDates } from "react-native-calendars/src/types";
 
 type IngredientsTabProps = BottomTabScreenProps<UserStackParamList, "IngredientsTab">;
 
@@ -20,6 +25,7 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
   const { primary } = theme.colors;
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
+  const calendarItems = useAppSelector(selectAllCalendarItems);
 
   React.useEffect(() => {
     if (user != null) {
@@ -68,12 +74,23 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
     }
   }, [calendarView, monthDateObj, selectedDateObj, weekDateObj]);
 
+  const markedDates = React.useMemo(() => {
+    const dates: MarkedDates = {};
+    calendarItems.forEach((item) => {
+      if (!Object.keys(dates).includes(item.date)) {
+        dates[item.date] = { marked: true };
+      }
+    });
+    return dates;
+  }, [calendarItems]);
+
   return (
     <View style={styles.container}>
       <CalendarProvider date={selectedDateString} theme={{ todayButtonTextColor: primary }}>
         <ExpandableCalendar
           date={selectedDateString}
           firstDay={1}
+          markedDates={markedDates}
           onDayPress={(dateData) => setSelectedDateString(dateData.dateString)}
           theme={{
             todayDotColor: primary,
