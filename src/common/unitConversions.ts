@@ -3,7 +3,16 @@ import { UNIT } from "./constants";
 export function convert(stringValue: string, from: string, to: string) {
   const numValue = Number(stringValue);
 
-  if (!(from in UNIT) || !(to in UNIT) || isNaN(numValue)) {
+  if (isNaN(numValue)) {
+    return undefined;
+  }
+
+  if (from === "" && to === "") {
+    // no conversion necessary
+    return numValue;
+  }
+
+  if (!(from in UNIT) || !(to in UNIT)) {
     return undefined;
   }
 

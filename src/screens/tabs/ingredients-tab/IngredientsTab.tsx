@@ -1,7 +1,7 @@
 import { Colors } from "@rneui/base";
-import { CheckBox, useTheme } from "@rneui/themed";
+import { CheckBox, Icon, Tooltip, useTheme } from "@rneui/themed";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { getMonthDateString } from "../../../common/date";
 import { useAppDispatch } from "../../../redux/hooks";
 import { fetchCalendarItems } from "../../../redux/calendarSlice";
@@ -30,10 +30,27 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
 
   const [startDate, setStartDate] = React.useState(new Date());
   const [endDate, setEndDate] = React.useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-
   const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
 
   const ingredients = useIngredientsByDate(startDate, endDate);
+
+  const sortedIngredients = React.useMemo(
+    () =>
+      ingredients.sort((a, b) => {
+        const aIsChecked = checkedIngredients.includes(a.item);
+        const bIsChecked = checkedIngredients.includes(b.item);
+        if (bIsChecked && !aIsChecked) {
+          return -1;
+        } else if (!bIsChecked && aIsChecked) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }),
+    [checkedIngredients, ingredients],
+  );
 
   const handleCheckChange = React.useCallback(
     (ingredientItem: string) => () => {
@@ -52,11 +69,23 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
       if (type === "set" && date != null) {
         if (startOrEnd === "start") {
           setStartDate(date);
+          const newEndDate = new Date(date);
+          newEndDate.setDate(date.getDate() + 7);
+          setEndDate(newEndDate);
         } else {
           setEndDate(date);
         }
       }
     };
+
+  const handleRefresh = React.useCallback(async () => {
+    setIsRefreshing(true);
+    if (user != null) {
+      await dispatch(fetchRecipes(user.uid));
+      await dispatch(fetchCalendarItems(user.uid));
+    }
+    setIsRefreshing(false);
+  }, [dispatch, user]);
 
   return (
     <View style={styles.container}>
@@ -73,8 +102,10 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
       <Text
         style={styles.text}
       >{`Ingredients for recipes in calendar from ${getMonthDateString(startDate)} to ${getMonthDateString(endDate)}:`}</Text>
-      <ScrollView>
-        {ingredients.length === 0 ? (
+      <ScrollView
+        refreshControl={<RefreshControl onRefresh={handleRefresh} refreshing={isRefreshing} />}
+      >
+        {sortedIngredients.length === 0 ? (
           <ZeroState
             imgSrc={require("../../../../assets/ingredients.png")}
             imgStyle={styles.zeroStateImg}
@@ -94,9 +125,22 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
                 onPress={handleCheckChange(ingredient.item)}
               />
               <Text style={styles.ingredient}>{ingredient.item}</Text>
-              <Text style={styles.rightText}>
-                {ingredient.quantity} {ingredient.unit}
-              </Text>
+              {ingredient.error ? (
+                <Tooltip
+                  visible={isTooltipOpen}
+                  onOpen={() => setIsTooltipOpen(true)}
+                  onClose={() => setIsTooltipOpen(false)}
+                  popover={<Text>Failed to add quantities</Text>}
+                  width={180}
+                  backgroundColor={theme.colors.white}
+                >
+                  <Icon style={{ opacity: 0.6 }} color={theme.colors.error} name="error" />
+                </Tooltip>
+              ) : (
+                <Text style={styles.rightText}>
+                  {ingredient.quantity} {ingredient.unit}
+                </Text>
+              )}
             </View>
           ))
         )}

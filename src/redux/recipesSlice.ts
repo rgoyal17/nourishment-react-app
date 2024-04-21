@@ -20,6 +20,8 @@ export interface Ingredient {
   quantity: string;
   notes: string;
   unit: string;
+  /** true when ingredient could not be parsed */
+  error?: boolean;
 }
 
 export interface Recipe {
