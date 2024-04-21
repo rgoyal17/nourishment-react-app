@@ -124,7 +124,7 @@ const makeStyles = (colors: Colors) =>
     },
     parsedIngredient: {
       paddingHorizontal: 10,
-      paddingVertical: 15,
+      paddingVertical: 13,
       borderBottomColor: colors.primary,
       borderBottomWidth: 0.2,
       flexDirection: "row",

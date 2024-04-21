@@ -1,31 +1,24 @@
 import { Colors } from "@rneui/base";
-import { ButtonGroup, CheckBox, useTheme } from "@rneui/themed";
+import { CheckBox, useTheme } from "@rneui/themed";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { CalendarProvider, ExpandableCalendar } from "react-native-calendars";
-import { getFutureDates, getLocalDateString, getMonthDateString } from "../../../common/date";
-import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
-import {
-  CalendarView,
-  fetchCalendarItems,
-  selectAllCalendarItems,
-} from "../../../redux/calendarSlice";
+import { getMonthDateString } from "../../../common/date";
+import { useAppDispatch } from "../../../redux/hooks";
+import { fetchCalendarItems } from "../../../redux/calendarSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useIngredientsByDate } from "../../../hooks/useIngredientsByDate";
 import { ZeroState } from "../../../common/ZeroState";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { UserStackParamList } from "../../../navigation/UserStack";
-import { MarkedDates } from "react-native-calendars/src/types";
+import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 type IngredientsTabProps = BottomTabScreenProps<UserStackParamList, "IngredientsTab">;
 
 export function IngredientsTab({ navigation }: IngredientsTabProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { primary } = theme.colors;
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
-  const calendarItems = useAppSelector(selectAllCalendarItems);
 
   React.useEffect(() => {
     if (user != null) {
@@ -33,25 +26,12 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
     }
   }, [dispatch, user]);
 
-  const [selectedDateString, setSelectedDateString] = React.useState(
-    getLocalDateString(new Date()),
-  );
-  const [calendarView, setCalendarView] = React.useState<CalendarView>(CalendarView.WEEK);
+  const [startDate, setStartDate] = React.useState(new Date());
+  const [endDate, setEndDate] = React.useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+
   const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
 
-  const buttons = React.useMemo(
-    () => Object.keys(CalendarView).filter((item) => isNaN(Number(item))),
-    [],
-  );
-
-  const selectedDateObj = React.useMemo(
-    () => new Date(selectedDateString + "T00:00:00"),
-    [selectedDateString],
-  );
-
-  const { weekDateObj, monthDateObj } = getFutureDates(selectedDateObj);
-
-  const ingredients = useIngredientsByDate(selectedDateString, calendarView);
+  const ingredients = useIngredientsByDate(startDate, endDate);
 
   const handleCheckChange = React.useCallback(
     (ingredientItem: string) => () => {
@@ -64,80 +44,71 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
     [],
   );
 
-  const calendarViewText = React.useMemo(() => {
-    if (calendarView === CalendarView.DAY) {
-      return `on ${getMonthDateString(selectedDateObj)}`;
-    } else if (calendarView === CalendarView.WEEK) {
-      return `from ${getMonthDateString(selectedDateObj)} to ${getMonthDateString(weekDateObj)}`;
-    } else {
-      return `from ${getMonthDateString(selectedDateObj)} to ${getMonthDateString(monthDateObj)}`;
-    }
-  }, [calendarView, monthDateObj, selectedDateObj, weekDateObj]);
-
-  const markedDates = React.useMemo(() => {
-    const dates: MarkedDates = {};
-    calendarItems.forEach((item) => {
-      if (!Object.keys(dates).includes(item.date)) {
-        dates[item.date] = { marked: true };
+  const handleSelectDate =
+    (startOrEnd: "start" | "end") =>
+    ({ type }: DateTimePickerEvent, date?: Date) => {
+      if (type === "set" && date != null) {
+        if (startOrEnd === "start") {
+          setStartDate(date);
+        } else {
+          setEndDate(date);
+        }
       }
-    });
-    return dates;
-  }, [calendarItems]);
+    };
 
   return (
     <View style={styles.container}>
-      <CalendarProvider date={selectedDateString} theme={{ todayButtonTextColor: primary }}>
-        <ExpandableCalendar
-          date={selectedDateString}
-          firstDay={1}
-          markedDates={markedDates}
-          onDayPress={(dateData) => setSelectedDateString(dateData.dateString)}
-          theme={{
-            todayDotColor: primary,
-            indicatorColor: primary,
-            selectedDotColor: primary,
-            arrowColor: primary,
-            selectedDayBackgroundColor: primary,
-            todayTextColor: primary,
-          }}
-        />
-        <ButtonGroup
-          buttons={buttons}
-          selectedIndex={calendarView}
-          onPress={(value) => setCalendarView(value)}
-        />
-        <Text
-          style={styles.text}
-        >{`Ingredients for recipes in calendar ${calendarViewText}:`}</Text>
-        <ScrollView>
-          {ingredients.length === 0 ? (
-            <ZeroState
-              imgSrc={require("../../../../assets/ingredients.png")}
-              imgStyle={styles.zeroStateImg}
-              title="No Recipes Found"
-              subtitle="Add some recipes on your selected dates to view a list of ingredients here"
-              actionButtonProps={{
-                title: "Go to Calendar",
-                onPress: () => navigation.navigate("CalendarTab"),
-              }}
-            />
-          ) : (
-            ingredients.map((ingredient, index) => (
-              <View style={styles.ingredientContainer} key={index}>
-                <CheckBox
-                  containerStyle={styles.checkbox}
-                  checked={checkedIngredients.includes(ingredient.item)}
-                  onPress={handleCheckChange(ingredient.item)}
-                />
-                <Text style={styles.ingredient}>{ingredient.item}</Text>
-                <Text style={styles.rightText}>
-                  {ingredient.quantity} {ingredient.unit}
-                </Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </CalendarProvider>
+      <View style={styles.datePickers}>
+        <View style={styles.picker}>
+          <Text style={styles.pickerText}>From</Text>
+          <RNDateTimePicker
+            maximumDate={endDate}
+            mode="date"
+            value={startDate}
+            onChange={handleSelectDate("start")}
+          />
+        </View>
+        <View style={styles.picker}>
+          <Text style={styles.pickerText}>To</Text>
+          <RNDateTimePicker
+            minimumDate={startDate}
+            mode="date"
+            value={endDate}
+            onChange={handleSelectDate("end")}
+          />
+        </View>
+      </View>
+      <Text
+        style={styles.text}
+      >{`Ingredients for recipes in calendar from ${getMonthDateString(startDate)} to ${getMonthDateString(endDate)}:`}</Text>
+      <ScrollView>
+        {ingredients.length === 0 ? (
+          <ZeroState
+            imgSrc={require("../../../../assets/ingredients.png")}
+            imgStyle={styles.zeroStateImg}
+            title="No Recipes Found"
+            subtitle="Add some recipes on your selected dates to view a list of ingredients here"
+            actionButtonProps={{
+              title: "Go to Calendar",
+              onPress: () => navigation.navigate("CalendarTab"),
+            }}
+          />
+        ) : (
+          ingredients.map((ingredient, index) => (
+            <View style={styles.ingredientContainer} key={index}>
+              <CheckBox
+                containerStyle={styles.checkbox}
+                checked={checkedIngredients.includes(ingredient.item)}
+                onPress={handleCheckChange(ingredient.item)}
+              />
+              <Text style={styles.ingredient}>{ingredient.item}</Text>
+              <Text style={styles.rightText}>
+                {ingredient.quantity} {ingredient.unit}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -147,8 +118,22 @@ const makeStyles = (colors: Colors) =>
     container: {
       flex: 1,
       backgroundColor: colors.secondary,
-      alignItems: "center",
       justifyContent: "center",
+    },
+    datePickers: {
+      paddingHorizontal: 10,
+      paddingVertical: 15,
+      rowGap: 10,
+    },
+    picker: {
+      rowGap: 5,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    pickerText: {
+      fontSize: 15,
+      fontWeight: "500",
     },
     text: {
       paddingVertical: 5,
