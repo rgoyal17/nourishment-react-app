@@ -15,26 +15,26 @@ export const INGREDIENT_CATEGORIES = [
   "Other",
 ];
 
-export const UNITS = [
+export enum UNIT {
   "gram",
   "kilogram",
-  "liter",
-  "milliliter",
-  "meter",
-  "centimeter",
-  "millimeter",
-  "celsius",
   "ounce",
   "pound",
+
+  "liter",
+  "milliliter",
   "teaspoon",
   "tablespoon",
   "cup",
   "pint",
   "quart",
   "gallon",
+
+  "meter",
+  "centimeter",
+  "millimeter",
   "inch",
   "foot",
   "yard",
   "mile",
-  "fahrenheit",
-];
+}

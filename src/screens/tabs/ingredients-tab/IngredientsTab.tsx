@@ -11,6 +11,7 @@ import { ZeroState } from "../../../common/ZeroState";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { UserStackParamList } from "../../../navigation/UserStack";
 import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { fetchRecipes } from "../../../redux/recipesSlice";
 
 type IngredientsTabProps = BottomTabScreenProps<UserStackParamList, "IngredientsTab">;
 
@@ -22,6 +23,7 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
 
   React.useEffect(() => {
     if (user != null) {
+      dispatch(fetchRecipes(user.uid));
       dispatch(fetchCalendarItems(user.uid));
     }
   }, [dispatch, user]);
@@ -61,21 +63,11 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
       <View style={styles.datePickers}>
         <View style={styles.picker}>
           <Text style={styles.pickerText}>From</Text>
-          <RNDateTimePicker
-            maximumDate={endDate}
-            mode="date"
-            value={startDate}
-            onChange={handleSelectDate("start")}
-          />
+          <RNDateTimePicker mode="date" value={startDate} onChange={handleSelectDate("start")} />
         </View>
         <View style={styles.picker}>
           <Text style={styles.pickerText}>To</Text>
-          <RNDateTimePicker
-            minimumDate={startDate}
-            mode="date"
-            value={endDate}
-            onChange={handleSelectDate("end")}
-          />
+          <RNDateTimePicker mode="date" value={endDate} onChange={handleSelectDate("end")} />
         </View>
       </View>
       <Text
