@@ -6,9 +6,8 @@ import { convert } from "../common/unitConversions";
 import { compact } from "lodash";
 
 export function useIngredientsByDate(startDate: Date, endDate: Date): Ingredient[] {
-  const calendarItems = useAppSelector((state) =>
-    selectCalendarItemsByDates(state, getDatesInRange(startDate, endDate)),
-  );
+  const dates = getDatesInRange(startDate, endDate);
+  const calendarItems = useAppSelector((state) => selectCalendarItemsByDates(state, dates));
   const allRecipes = useAppSelector(selectAllRecipes);
   const recipeIds = calendarItems.flatMap(
     (item) => item.recipeData.flatMap((data) => data.recipeIds) ?? [],

@@ -32,7 +32,7 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
   const [endDate, setEndDate] = React.useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
   const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
+  const [errorIngredient, setErrorIngredient] = React.useState<string>();
 
   const ingredients = useIngredientsByDate(startDate, endDate);
 
@@ -99,9 +99,9 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
           <RNDateTimePicker mode="date" value={endDate} onChange={handleSelectDate("end")} />
         </View>
       </View>
-      <Text
-        style={styles.text}
-      >{`Ingredients for recipes in calendar from ${getMonthDateString(startDate)} to ${getMonthDateString(endDate)}:`}</Text>
+      <Text style={styles.text}>{`Ingredients for recipes in calendar from ${getMonthDateString(
+        startDate,
+      )} to ${getMonthDateString(endDate)}:`}</Text>
       <ScrollView
         refreshControl={<RefreshControl onRefresh={handleRefresh} refreshing={isRefreshing} />}
       >
@@ -127,9 +127,9 @@ export function IngredientsTab({ navigation }: IngredientsTabProps) {
               <Text style={styles.ingredient}>{ingredient.item}</Text>
               {ingredient.error ? (
                 <Tooltip
-                  visible={isTooltipOpen}
-                  onOpen={() => setIsTooltipOpen(true)}
-                  onClose={() => setIsTooltipOpen(false)}
+                  visible={errorIngredient === ingredient.item}
+                  onOpen={() => setErrorIngredient(ingredient.item)}
+                  onClose={() => setErrorIngredient(undefined)}
                   popover={<Text>Failed to add quantities</Text>}
                   width={180}
                   backgroundColor={theme.colors.white}

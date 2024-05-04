@@ -1,6 +1,7 @@
 import React from "react";
-import { ImageBackground, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button, Colors, Icon, Input, useTheme } from "@rneui/themed";
+import { Input as BaseInput } from "@rneui/base";
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Sentry from "@sentry/react-native";
@@ -11,6 +12,7 @@ interface LoginState {
   password: string;
   confirmPassword: string;
   error: string;
+  loading: boolean;
 }
 
 const INITIAL_LOGIN_STATE: LoginState = {
@@ -18,6 +20,7 @@ const INITIAL_LOGIN_STATE: LoginState = {
   password: "",
   confirmPassword: "",
   error: "",
+  loading: false,
 };
 
 export function LoginScreen() {
@@ -31,7 +34,8 @@ export function LoginScreen() {
   const [loginState, setLoginState] = React.useReducer(
     (prev: LoginState, next: Partial<LoginState>) => {
       const nextState = { ...prev, ...next };
-      if (next.error == null) {
+      if (next.error == null && next.loading == null) {
+        // reset the error if email, password ,or confirm password change.
         nextState.error = "";
       }
       return nextState;
@@ -42,12 +46,15 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
+  const passwordRef = React.createRef<BaseInput & TextInput>();
+  const confirmPasswordRef = React.useRef<BaseInput & TextInput>(null);
+
   const handleChangeTab = (tabId: number) => () => {
     setLoginState({ error: "" });
     setSelectedTab(tabId);
   };
 
-  async function signIn() {
+  const signIn = React.useCallback(async () => {
     if (loginState.email.trim().length === 0 || loginState.password.trim().length === 0) {
       setLoginState({
         error: "Email and password are mandatory",
@@ -56,6 +63,7 @@ export function LoginScreen() {
     }
 
     try {
+      setLoginState({ loading: true });
       await signInWithEmailAndPassword(auth, loginState.email, loginState.password);
     } catch (error: any) {
       if (error.code === "auth/user-not-found") {
@@ -68,14 +76,14 @@ export function LoginScreen() {
         Sentry.captureException(error);
         setLoginState({ error: "Failed to sign in" });
       }
+    } finally {
+      setLoginState({ loading: false });
     }
-  }
+  }, [auth, loginState.email, loginState.password]);
 
-  async function signUp() {
+  const signUp = React.useCallback(async () => {
     if (loginState.email.trim().length === 0 || loginState.password.trim().length === 0) {
-      setLoginState({
-        error: "Email and password are mandatory",
-      });
+      setLoginState({ error: "Email and password are mandatory" });
       return;
     }
 
@@ -87,6 +95,7 @@ export function LoginScreen() {
     }
 
     try {
+      setLoginState({ loading: true });
       await createUserWithEmailAndPassword(auth, loginState.email, loginState.password);
     } catch (error: any) {
       if (error.code === "auth/invalid-email") {
@@ -99,8 +108,18 @@ export function LoginScreen() {
         Sentry.captureException(error);
         setLoginState({ error: "Failed to sign up" });
       }
+    } finally {
+      setLoginState({ loading: false });
     }
-  }
+  }, [auth, loginState.confirmPassword, loginState.email, loginState.password]);
+
+  const handlePasswordDone = React.useCallback(() => {
+    if (selectedTab === 0) {
+      signIn();
+    } else {
+      confirmPasswordRef.current?.focus();
+    }
+  }, [selectedTab, signIn]);
 
   return (
     <KeyboardAwareScrollView
@@ -138,7 +157,8 @@ export function LoginScreen() {
               value={loginState.email}
               inputContainerStyle={styles.input}
               containerStyle={styles.inputContainer}
-              returnKeyType="done"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
             <Input
               placeholder="Password"
@@ -147,7 +167,8 @@ export function LoginScreen() {
               secureTextEntry={!showPassword}
               inputContainerStyle={styles.input}
               containerStyle={styles.inputContainer}
-              returnKeyType="done"
+              returnKeyType={selectedTab === 0 ? "done" : "next"}
+              ref={passwordRef}
               rightIcon={
                 showPassword ? (
                   <Icon name="eye-with-line" type="entypo" onPress={() => setShowPassword(false)} />
@@ -155,6 +176,7 @@ export function LoginScreen() {
                   <Icon name="eye" type="entypo" onPress={() => setShowPassword(true)} />
                 )
               }
+              onSubmitEditing={handlePasswordDone}
             />
             {selectedTab === 1 ? (
               <Input
@@ -176,6 +198,8 @@ export function LoginScreen() {
                     <Icon name="eye" type="entypo" onPress={() => setShowConfirmPassword(true)} />
                   )
                 }
+                ref={confirmPasswordRef}
+                onSubmitEditing={signUp}
               />
             ) : null}
             {loginState.error !== "" ? <Text style={styles.error}>{loginState.error}</Text> : null}
@@ -184,6 +208,7 @@ export function LoginScreen() {
                 title="Sign in"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
+                loading={loginState.loading}
                 onPress={signIn}
               />
             ) : (
@@ -191,16 +216,10 @@ export function LoginScreen() {
                 title="Sign up"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
+                loading={loginState.loading}
                 onPress={signUp}
               />
             )}
-            {/* <SocialIcon
-              type="google"
-              button
-              title="Sign in with Google"
-              raised={false}
-              style={styles.googleButton}
-            /> */}
           </View>
         </ImageBackground>
       </View>
