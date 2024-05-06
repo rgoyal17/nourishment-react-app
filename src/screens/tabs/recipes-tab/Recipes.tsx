@@ -1,7 +1,7 @@
 import { Colors, FAB } from "@rneui/base";
 import { Text, Image, useTheme, Icon, ListItem, Divider, Button } from "@rneui/themed";
 import React from "react";
-import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { StackScreenProps } from "@react-navigation/stack";
 import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
@@ -11,6 +11,13 @@ import { ActivityIndicator } from "react-native";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { v4 as uuidv4 } from "uuid";
 import { ZeroState } from "../../../common/ZeroState";
+import { SearchRow } from "./SearchRow";
+import {
+  SortOption,
+  fetchRecipeSortOption,
+  getRecipeSortOption,
+  updateRecipeSortOption,
+} from "../../../redux/recipeSortSlice";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
@@ -23,6 +30,7 @@ export function Recipes({ navigation }: RecipesProps) {
   const dispatch = useAppDispatch();
 
   const recipes = useAppSelector(selectAllRecipes);
+  const sortOption = useAppSelector(getRecipeSortOption);
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -34,12 +42,47 @@ export function Recipes({ navigation }: RecipesProps) {
   const importSnapPoints = React.useMemo(() => ["30%", "70%"], []);
 
   const [recipeUrl, setRecipeUrl] = React.useState("");
+  const [searchText, setSearchText] = React.useState("");
+
+  const filteredRecipes = React.useMemo(() => {
+    if (searchText.trim().length > 0) {
+      return recipes.filter((recipe) => recipe.title.includes(searchText));
+    }
+    return recipes;
+  }, [recipes, searchText]);
+
+  const sortedRecipes = React.useMemo(() => {
+    if (sortOption === SortOption.Name) {
+      return filteredRecipes;
+    } else if (sortOption === SortOption.Newest) {
+      return [...filteredRecipes].sort(
+        (a, b) => new Date(b.isoDate).getTime() - new Date(a.isoDate).getTime(),
+      );
+    } else {
+      return [...filteredRecipes].sort(
+        (a, b) => new Date(a.isoDate).getTime() - new Date(b.isoDate).getTime(),
+      );
+    }
+  }, [filteredRecipes, sortOption]);
 
   React.useEffect(() => {
     if (user != null) {
       dispatch(fetchRecipes(user.uid));
+      dispatch(fetchRecipeSortOption(user.uid));
     }
   }, [dispatch, user]);
+
+  const handleUpdateSortOption = React.useCallback(
+    async (option: SortOption) => {
+      if (user?.uid == null) {
+        Alert.alert("Please sign in first");
+        return;
+      }
+      await dispatch(updateRecipeSortOption({ userId: user.uid, sortOption: option }));
+      await dispatch(fetchRecipeSortOption(user.uid));
+    },
+    [dispatch, user?.uid],
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -79,6 +122,7 @@ export function Recipes({ navigation }: RecipesProps) {
           instructions: recipe.instructions_list ?? [],
           cookTime: "",
           prepTime: "",
+          isoDate: new Date().toISOString(),
           websiteUrl: recipeUrl,
         },
         source: "import",
@@ -92,9 +136,17 @@ export function Recipes({ navigation }: RecipesProps) {
 
   return (
     <View style={styles.container}>
-      {recipes.length > 0 ? (
+      {recipes.length > 6 ? (
+        <SearchRow
+          sortOption={sortOption}
+          searchText={searchText}
+          onChangeSearchText={(text) => setSearchText(text)}
+          onSelectSortOption={(option) => handleUpdateSortOption(option)}
+        />
+      ) : null}
+      {sortedRecipes.length > 0 ? (
         <FlatList
-          data={recipes}
+          data={sortedRecipes}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.recipeItem}
@@ -140,7 +192,7 @@ export function Recipes({ navigation }: RecipesProps) {
         />
       )}
 
-      {recipes.length > 0 ? (
+      {sortedRecipes.length > 0 ? (
         <FAB
           style={styles.fab}
           icon={{ name: "add", color: theme.colors.secondary }}
@@ -148,6 +200,7 @@ export function Recipes({ navigation }: RecipesProps) {
           onPress={() => addBottomSheetRef.current?.present()}
         />
       ) : null}
+
       <BottomSheetModal
         enablePanDownToClose
         ref={addBottomSheetRef}

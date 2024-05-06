@@ -34,6 +34,7 @@ export interface Recipe {
   instructions: string[];
   cookTime: string;
   prepTime: string;
+  isoDate: string;
   websiteUrl?: string;
 }
 
@@ -65,7 +66,7 @@ export const addNewRecipe = createAsyncThunk(
 
     const db = getFirestore();
     const recipeDoc = doc(db, `users/${userId}/recipes/${id}`);
-    const updatedRecipe = { ...recipe, id, image };
+    const updatedRecipe = { ...recipe, id, image, isoDate: new Date().toISOString() };
     await setDoc(recipeDoc, { ...updatedRecipe });
 
     return recipe;

@@ -21,6 +21,7 @@ export const INITIAL_RECIPE: Recipe = {
   instructions: [],
   cookTime: "",
   prepTime: "",
+  isoDate: new Date().toISOString(),
 };
 
 interface ValidationErrors {
