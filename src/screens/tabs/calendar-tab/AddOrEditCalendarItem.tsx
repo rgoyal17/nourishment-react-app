@@ -15,7 +15,6 @@ import {
   editCalendarItem,
   fetchCalendarItems,
 } from "../../../redux/calendarSlice";
-// import MultiSelect from "react-native-multiple-select";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { Recipe, selectAllRecipes, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { StackScreenProps } from "@react-navigation/stack";

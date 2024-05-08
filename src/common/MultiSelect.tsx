@@ -36,7 +36,7 @@ export function MultiSelect<T extends SelectItemProps>({
   const [stagedSelectedItems, setStagedSelectedItems] = React.useState<T[]>(selectedItems);
 
   const filteredItems = React.useMemo(
-    () => items.filter((i) => i.title.includes(searchText)),
+    () => items.filter((i) => i.title.toLowerCase().includes(searchText.toLowerCase())),
     [items, searchText],
   );
 
@@ -107,6 +107,7 @@ export function MultiSelect<T extends SelectItemProps>({
             style={styles.input}
             value={searchText}
             onChangeText={(text) => setSearchText(text)}
+            returnKeyType="done"
           />
           <ScrollView contentContainerStyle={styles.itemsContainer}>
             {filteredItems.map((item, index) => (
@@ -168,6 +169,7 @@ const makeStyles = (colors: Colors) =>
     itemsContainer: {
       flexGrow: 1,
       marginTop: 20,
+      paddingBottom: 30,
       rowGap: 10,
     },
     checkbox: {

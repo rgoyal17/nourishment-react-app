@@ -59,6 +59,7 @@ export function UserStack() {
             tabBarIcon: ({ focused }) => (
               <Icon name="shopping-basket" color={focused ? secondary : grey2} />
             ),
+            headerShown: false,
             title: "Ingredients",
           }}
           name="IngredientsTab"

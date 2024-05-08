@@ -65,7 +65,7 @@ export function IngredientsAndInstructions({
                   <View>
                     {mappedIngredients.get(category)?.map((ingredient, key) => (
                       <View style={styles.parsedIngredient} key={index + key}>
-                        <View>
+                        <View style={{ flex: 1 }}>
                           <Text>{ingredient.item}</Text>
                           {ingredient.notes.trim() !== "" ? (
                             <Text style={styles.notes}>{ingredient.notes}</Text>
