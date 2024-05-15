@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon, useTheme } from "@rneui/themed";
 import { RecipesTab } from "../screens/tabs/recipes-tab/RecipesTab";
-import { IngredientsTab } from "../screens/tabs/ingredients-tab/IngredientsTab";
+import { GroceriesTab } from "../screens/tabs/groceries-tab/GroceriesTab";
 import { CalendarTab } from "../screens/tabs/calendar-tab/CalendarTab";
 import { AccountTab } from "../screens/tabs/account-tab/AccountTab";
 import { HEADER_HEIGHT } from "../common/constants";
@@ -11,7 +11,7 @@ import { HEADER_HEIGHT } from "../common/constants";
 export type UserStackParamList = {
   RecipesTab: undefined;
   CalendarTab: undefined;
-  IngredientsTab: undefined;
+  GroceriesTab: undefined;
   AccountTab: undefined;
 };
 
@@ -60,10 +60,10 @@ export function UserStack() {
               <Icon name="shopping-basket" color={focused ? secondary : grey2} />
             ),
             headerShown: false,
-            title: "Ingredients",
+            title: "Groceries",
           }}
-          name="IngredientsTab"
-          component={IngredientsTab}
+          name="GroceriesTab"
+          component={GroceriesTab}
         />
         <Tab.Screen
           options={{

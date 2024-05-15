@@ -11,11 +11,11 @@ import { ZeroState } from "../../../common/ZeroState";
 import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { fetchRecipes } from "../../../redux/recipesSlice";
 import { StackScreenProps } from "@react-navigation/stack";
-import { IngredientsTabStackParamList } from "./IngredientsTab";
+import { GroceriesTabStackParamList } from "./GroceriesTab";
 
-type IngredientsProps = StackScreenProps<IngredientsTabStackParamList, "IngredientsPage">;
+type IngredientsProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
 
-export function IngredientsPage({ navigation }: IngredientsProps) {
+export function GroceriesPage({ navigation }: IngredientsProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();

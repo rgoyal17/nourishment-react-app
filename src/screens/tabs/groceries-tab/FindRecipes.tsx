@@ -15,9 +15,9 @@ import { MultiSelect } from "../../../common/MultiSelect";
 import { compact } from "lodash";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { StackScreenProps } from "@react-navigation/stack";
-import { IngredientsTabStackParamList } from "./IngredientsTab";
+import { GroceriesTabStackParamList } from "./GroceriesTab";
 
-type FindRecipesProps = StackScreenProps<IngredientsTabStackParamList, "FindRecipes">;
+type FindRecipesProps = StackScreenProps<GroceriesTabStackParamList, "FindRecipes">;
 
 export function FindRecipes({ navigation }: FindRecipesProps) {
   const { theme } = useTheme();

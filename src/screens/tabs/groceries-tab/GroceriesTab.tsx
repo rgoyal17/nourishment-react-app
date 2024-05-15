@@ -2,27 +2,27 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Icon, useTheme } from "@rneui/themed";
 import React from "react";
 import { HEADER_HEIGHT } from "../../../common/constants";
-import { IngredientsPage } from "./IngredientsPage";
+import { GroceriesPage } from "./GroceriesPage";
 import { CalendarTabStackParamList } from "../calendar-tab/CalendarTab";
 import { FindRecipes } from "./FindRecipes";
 import { RecipesTabStackParamList } from "../recipes-tab/RecipesTab";
 
-export type IngredientsTabStackParamList = {
+export type GroceriesTabStackParamList = {
   RecipesTab: { screen: keyof RecipesTabStackParamList; params: any };
   CalendarTab: { screen: keyof CalendarTabStackParamList; params: any };
-  IngredientsPage: undefined;
+  GroceriesPage: undefined;
   FindRecipes: undefined;
 };
 
-const Stack = createStackNavigator<IngredientsTabStackParamList>();
+const Stack = createStackNavigator<GroceriesTabStackParamList>();
 
-export function IngredientsTab() {
+export function GroceriesTab() {
   const { theme } = useTheme();
   const { primary, secondary } = theme.colors;
 
   return (
     <Stack.Navigator
-      initialRouteName="IngredientsPage"
+      initialRouteName="GroceriesPage"
       screenOptions={{
         headerStyle: { backgroundColor: primary, height: HEADER_HEIGHT },
         headerBackTitleVisible: false,
@@ -31,9 +31,9 @@ export function IngredientsTab() {
       }}
     >
       <Stack.Screen
-        name="IngredientsPage"
-        component={IngredientsPage}
-        options={{ title: "Ingredients" }}
+        name="GroceriesPage"
+        component={GroceriesPage}
+        options={{ title: "Groceries" }}
       />
       <Stack.Screen
         name="FindRecipes"
