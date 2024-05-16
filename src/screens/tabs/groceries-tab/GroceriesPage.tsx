@@ -22,8 +22,6 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
 
   const groceriesState = useAppSelector(selectGroceriesState);
 
-  console.log(groceriesState);
-
   React.useEffect(() => {
     if (user != null) {
       dispatch(fetchGroceries(user.uid));
