@@ -10,6 +10,7 @@ import { RecipesTabStackParamList } from "./RecipesTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { Recipe, addNewRecipe, editRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAppDispatch } from "../../../redux/hooks";
+import * as Sentry from "@sentry/react-native";
 
 export const INITIAL_RECIPE: Recipe = {
   id: "",
@@ -113,6 +114,7 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
       navigation.navigate("Recipes");
     } catch (e) {
       Alert.alert("Failed to add recipe");
+      Sentry.captureException(e);
     } finally {
       setIsAddingRecipe(false);
     }

@@ -5,6 +5,8 @@ import { Input as BaseInput } from "@rneui/base";
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Sentry from "@sentry/react-native";
+import { doc, getFirestore, setDoc } from "firebase/firestore";
+import { SortOption } from "../../redux/recipeSortSlice";
 // import { SocialIcon } from "@rneui/base";
 
 interface LoginState {
@@ -82,12 +84,13 @@ export function LoginScreen() {
   }, [auth, loginState.email, loginState.password]);
 
   const signUp = React.useCallback(async () => {
-    if (loginState.email.trim().length === 0 || loginState.password.trim().length === 0) {
+    const { email, password, confirmPassword } = loginState;
+    if (email.trim().length === 0 || password.trim().length === 0) {
       setLoginState({ error: "Email and password are mandatory" });
       return;
     }
 
-    if (loginState.password !== loginState.confirmPassword) {
+    if (password !== confirmPassword) {
       setLoginState({
         error: "Passwords do not match",
       });
@@ -96,7 +99,10 @@ export function LoginScreen() {
 
     try {
       setLoginState({ loading: true });
-      await createUserWithEmailAndPassword(auth, loginState.email, loginState.password);
+      const user = await createUserWithEmailAndPassword(auth, email, password);
+      const db = getFirestore();
+      // create user doc with some initial value for recipe sort
+      await setDoc(doc(db, `users/${user.user.uid}`), { recipeSortOption: SortOption.Name });
     } catch (error: any) {
       if (error.code === "auth/invalid-email") {
         setLoginState({ error: "Invalid email address" });
@@ -111,7 +117,7 @@ export function LoginScreen() {
     } finally {
       setLoginState({ loading: false });
     }
-  }, [auth, loginState.confirmPassword, loginState.email, loginState.password]);
+  }, [auth, loginState]);
 
   const handlePasswordDone = React.useCallback(() => {
     if (selectedTab === 0) {

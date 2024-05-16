@@ -20,7 +20,5 @@ export function useAuthentication() {
     return unsubscribeFromAuthStateChanged;
   }, [auth]);
 
-  return {
-    user,
-  };
+  return { user };
 }
