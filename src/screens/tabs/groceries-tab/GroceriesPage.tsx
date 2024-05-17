@@ -21,20 +21,26 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
+  const groceriesState = useAppSelector(selectGroceriesState);
+  const groceries = groceriesState.groceryItems;
 
   const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const addSnapPoints = React.useMemo(() => ["25%"], []);
 
-  const [checkedGroceries, setCheckedGroceries] = React.useState<string[]>([]);
-
-  const groceriesState = useAppSelector(selectGroceriesState);
-  const groceries = groceriesState.groceryItems;
+  const [checkedGroceries, setCheckedGroceries] = React.useState<string[]>(
+    groceries.filter((item) => item.isChecked).map((item) => item.item),
+  );
 
   React.useEffect(() => {
     if (user != null) {
       dispatch(fetchGroceries(user.uid));
     }
   }, [dispatch, user]);
+
+  const handleAddItem = React.useCallback(() => {
+    addBottomSheetRef.current?.dismiss();
+    navigation.navigate("AddGroceryItem");
+  }, [navigation]);
 
   const handleImportFromRecipes = React.useCallback(() => {
     addBottomSheetRef.current?.dismiss();
@@ -112,7 +118,7 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
           <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
         )}
       >
-        <ListItem>
+        <ListItem onPress={handleAddItem}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="add" type="ionicon" />
             <ListItem.Title>Add new item</ListItem.Title>

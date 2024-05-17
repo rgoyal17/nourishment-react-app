@@ -1,4 +1,4 @@
-import { Button, Colors, useTheme } from "@rneui/themed";
+import { Button, Colors, Icon, ListItem, useTheme } from "@rneui/themed";
 import React from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
@@ -18,6 +18,7 @@ import { compact } from "lodash";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import * as Sentry from "@sentry/react-native";
+import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type RecipeGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "RecipeGroceries">;
 
@@ -28,6 +29,8 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
   const dispatch = useAppDispatch();
   const recipes = useAppSelector(selectAllRecipes);
   const groceriesState = useAppSelector(selectGroceriesState);
+  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const snapPoints = React.useMemo(() => ["18%"], []);
 
   const [selectedRecipes, setSelectedRecipes] = React.useState<Recipe[]>([]);
   const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
@@ -36,6 +39,24 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
   const ingredients = combineIngredients(
     selectedRecipes.flatMap((recipe) => recipe.ingredientsParsed),
   );
+
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          icon={
+            <Icon
+              color={theme.colors.secondary}
+              size={30}
+              name="dots-horizontal"
+              type="material-community"
+            />
+          }
+          onPress={() => bottomSheetRef.current?.present()}
+        />
+      ),
+    });
+  }, [navigation, theme.colors.secondary]);
 
   React.useEffect(() => {
     if (user != null) {
@@ -91,6 +112,22 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
     user?.uid,
   ]);
 
+  const handleSelectAll = React.useCallback(() => {
+    const newCheckedIngredients = [...checkedIngredients];
+    ingredients.forEach((ingr) => {
+      if (!newCheckedIngredients.includes(ingr.item)) {
+        newCheckedIngredients.push(ingr.item);
+      }
+    });
+    setCheckedIngredients(newCheckedIngredients);
+    bottomSheetRef.current?.dismiss();
+  }, [checkedIngredients, ingredients]);
+
+  const handleDeselectAll = React.useCallback(() => {
+    setCheckedIngredients([]);
+    bottomSheetRef.current?.dismiss();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.recipes}>
@@ -127,6 +164,28 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
           onPress={addIngredientsToGroceries}
         />
       ) : null}
+
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={bottomSheetRef}
+        snapPoints={snapPoints}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
+      >
+        <ListItem onPress={handleSelectAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="check" type="entypo" />
+            <ListItem.Title>Select all</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem onPress={handleDeselectAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="cross" type="entypo" />
+            <ListItem.Title>Deselect all</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -155,5 +214,12 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 10,
       marginBottom: 10,
       width: 300,
+    },
+    bottomSheetOption: {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      alignItems: "center",
+      columnGap: 10,
     },
   });
