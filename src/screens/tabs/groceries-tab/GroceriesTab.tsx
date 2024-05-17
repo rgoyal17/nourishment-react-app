@@ -7,12 +7,14 @@ import { CalendarTabStackParamList } from "../calendar-tab/CalendarTab";
 import { FindRecipes } from "./FindRecipes";
 import { RecipesTabStackParamList } from "../recipes-tab/RecipesTab";
 import { CalendarGroceries } from "./CalendarGroceries";
+import { RecipeGroceries } from "./RecipeGroceries";
 
 export type GroceriesTabStackParamList = {
   RecipesTab: { screen: keyof RecipesTabStackParamList; params: any };
   CalendarTab: { screen: keyof CalendarTabStackParamList; params: any };
   GroceriesPage: undefined;
   CalendarGroceries: undefined;
+  RecipeGroceries: undefined;
   FindRecipes: undefined;
 };
 
@@ -41,6 +43,11 @@ export function GroceriesTab() {
         name="CalendarGroceries"
         component={CalendarGroceries}
         options={{ title: "Choose from Calendar" }}
+      />
+      <Stack.Screen
+        name="RecipeGroceries"
+        component={RecipeGroceries}
+        options={{ title: "Choose from Recipes" }}
       />
       <Stack.Screen
         name="FindRecipes"

@@ -2,12 +2,17 @@ import React from "react";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import { View, StyleSheet } from "react-native";
-import { Colors, Icon, ListItem, useTheme } from "@rneui/themed";
+import { Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
-import { fetchGroceries, selectGroceriesState } from "../../../redux/groceriesSlice";
+import {
+  fetchGroceries,
+  selectGroceriesState,
+  setGroceryItems,
+} from "../../../redux/groceriesSlice";
 import { ZeroState } from "../../../common/ZeroState";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { IngredientsList } from "./IngredientsList";
 
 type GroceriesProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
 
@@ -20,7 +25,10 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const addSnapPoints = React.useMemo(() => ["25%"], []);
 
+  const [checkedGroceries, setCheckedGroceries] = React.useState<string[]>([]);
+
   const groceriesState = useAppSelector(selectGroceriesState);
+  const groceries = groceriesState.groceryItems;
 
   React.useEffect(() => {
     if (user != null) {
@@ -28,23 +36,73 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
     }
   }, [dispatch, user]);
 
+  const handleImportFromRecipes = React.useCallback(() => {
+    addBottomSheetRef.current?.dismiss();
+    navigation.navigate("RecipeGroceries");
+  }, [navigation]);
+
   const handleImportFromCalendar = React.useCallback(() => {
     addBottomSheetRef.current?.dismiss();
     navigation.navigate("CalendarGroceries");
   }, [navigation]);
 
+  const handleRefresh = React.useCallback(async () => {
+    if (user != null) {
+      await dispatch(fetchGroceries(user.uid));
+    }
+  }, [dispatch, user]);
+
+  const handleCheckChange = React.useCallback(
+    async (changedItem: string) => {
+      setCheckedGroceries((prev) =>
+        prev.includes(changedItem)
+          ? [...prev].filter((i) => i !== changedItem)
+          : [...prev, changedItem],
+      );
+
+      const updatedGroceries = groceries.map((existingItem) =>
+        existingItem.item === changedItem
+          ? { ...existingItem, isChecked: !existingItem.isChecked }
+          : existingItem,
+      );
+      if (user != null) {
+        await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
+        await dispatch(fetchGroceries(user.uid));
+      }
+    },
+    [dispatch, groceries, user],
+  );
+
   return (
     <View style={styles.container}>
-      <ZeroState
-        imgSrc={require("../../../../assets/groceries.png")}
-        imgStyle={styles.zeroStateImg}
-        title="No Groceries Found"
-        subtitle="Add some grocery items to view them here"
-        actionButtonProps={{
-          title: "Add Grocery Items",
-          onPress: () => addBottomSheetRef.current?.present(),
-        }}
-      />
+      {groceries.length === 0 ? (
+        <ZeroState
+          imgSrc={require("../../../../assets/groceries.png")}
+          imgStyle={styles.zeroStateImg}
+          title="No Groceries Found"
+          subtitle="Add some grocery items to view them here"
+          actionButtonProps={{
+            title: "Add Grocery Items",
+            onPress: () => addBottomSheetRef.current?.present(),
+          }}
+        />
+      ) : (
+        <IngredientsList
+          ingredients={groceries}
+          checkedIngredients={checkedGroceries}
+          onCheckChange={handleCheckChange}
+          onRefresh={handleRefresh}
+        />
+      )}
+
+      {groceries.length > 0 ? (
+        <FAB
+          style={styles.fab}
+          icon={{ name: "add", color: theme.colors.secondary }}
+          color={theme.colors.primary}
+          onPress={() => addBottomSheetRef.current?.present()}
+        />
+      ) : null}
 
       <BottomSheetModal
         enablePanDownToClose
@@ -60,7 +118,7 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
             <ListItem.Title>Add new item</ListItem.Title>
           </ListItem.Content>
         </ListItem>
-        <ListItem>
+        <ListItem onPress={handleImportFromRecipes}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="menu-book" />
             <ListItem.Title>Ingredients of recipes</ListItem.Title>
@@ -82,6 +140,11 @@ const makeStyles = (colors: Colors) =>
     container: {
       flex: 1,
       backgroundColor: colors.secondary,
+    },
+    fab: {
+      position: "absolute",
+      bottom: 20,
+      right: 20,
     },
     zeroStateImg: {
       marginTop: -40,

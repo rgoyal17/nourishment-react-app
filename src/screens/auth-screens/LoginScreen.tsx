@@ -101,8 +101,11 @@ export function LoginScreen() {
       setLoginState({ loading: true });
       const user = await createUserWithEmailAndPassword(auth, email, password);
       const db = getFirestore();
-      // create user doc with some initial value for recipe sort
-      await setDoc(doc(db, `users/${user.user.uid}`), { recipeSortOption: SortOption.Name });
+      // create user doc with some default initial values
+      await setDoc(doc(db, `users/${user.user.uid}`), {
+        recipeSortOption: SortOption.Name,
+        groceries: [],
+      });
     } catch (error: any) {
       if (error.code === "auth/invalid-email") {
         setLoginState({ error: "Invalid email address" });

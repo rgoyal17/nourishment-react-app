@@ -1,7 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
-import { getFirestore, setDoc, doc, collection, getDocs, deleteDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { Ingredient } from "./recipesSlice";
+import { combineIngredients } from "../common/combineIngredients";
 
 export interface GroceryItem extends Ingredient {
   isChecked: boolean;
@@ -18,45 +19,58 @@ export const fetchGroceries = createAsyncThunk(
   "groceries/fetchGroceries",
   async (userId: string) => {
     const db = getFirestore();
-    const groceriesCollection = collection(db, `users/${userId}/groceries`);
-    const groceries: GroceryItem[] = await getDocs(groceriesCollection)
-      .then((result) => result.docs.map((doc) => doc.data() as GroceryItem))
-      .catch(() => []);
+    const userDoc = getDoc(doc(db, `users/${userId}`));
+    const groceries: GroceryItem[] = ((await userDoc).data()?.groceries as GroceryItem[]) ?? [];
     return groceries;
   },
 );
 
-interface AddNewGroceryItemParams {
+interface AddGroceryItemsParams {
   userId: string;
-  groceryItem: GroceryItem;
+  existingGroceryItems: GroceryItem[];
+  groceryItems: GroceryItem[];
 }
 
-export const addNewGroceryItem = createAsyncThunk(
-  "groceries/addNewGroceryItem",
-  async ({ userId, groceryItem }: AddNewGroceryItemParams) => {
-    if (groceryItem.item.trim().length === 0) {
-      throw new Error("Item name should not be empty");
-    }
+export const addGroceryItems = createAsyncThunk(
+  "groceries/addGroceryItem",
+  async ({ userId, existingGroceryItems, groceryItems }: AddGroceryItemsParams) => {
     const db = getFirestore();
-    const groceryItemDoc = doc(db, `users/${userId}/groceries/${groceryItem.item}`);
-    await setDoc(groceryItemDoc, groceryItem);
+    const userDoc = doc(db, `users/${userId}`);
+    await updateDoc(userDoc, {
+      groceries: combineIngredients([...existingGroceryItems, ...groceryItems]),
+    });
+    return groceryItems;
+  },
+);
 
-    return groceryItem;
+interface SetGroceryItemsParams {
+  userId: string;
+  groceryItems: GroceryItem[];
+}
+
+export const setGroceryItems = createAsyncThunk(
+  "groceries/setGroceryItems",
+  async ({ userId, groceryItems }: SetGroceryItemsParams) => {
+    const db = getFirestore();
+    const userDoc = doc(db, `users/${userId}`);
+    await updateDoc(userDoc, { groceries: groceryItems });
+    return groceryItems;
   },
 );
 
 interface DeleteGroceryItemParams {
   userId: string;
+  existingGroceryItems: GroceryItem[];
   groceryItem: GroceryItem;
 }
 
 export const deleteGroceryItem = createAsyncThunk(
   "groceries/deleteGroceryItem",
-  async ({ userId, groceryItem }: DeleteGroceryItemParams) => {
+  async ({ userId, existingGroceryItems, groceryItem }: DeleteGroceryItemParams) => {
     const db = getFirestore();
-    const groceryItemDoc = doc(db, `users/${userId}/groceries/${groceryItem.item}`);
-    await deleteDoc(groceryItemDoc);
-
+    const userDoc = doc(db, `users/${userId}`);
+    const updatedItems = existingGroceryItems.filter((item) => item.item !== groceryItem.item);
+    await updateDoc(userDoc, { groceries: [...updatedItems] });
     return groceryItem;
   },
 );
@@ -66,7 +80,10 @@ const groceriesSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers(builder) {
-    builder.addCase(fetchGroceries.pending, () => ({ loading: true, groceryItems: [] }));
+    builder.addCase(fetchGroceries.pending, ({ groceryItems }) => ({
+      loading: true,
+      groceryItems,
+    }));
     builder.addCase(fetchGroceries.fulfilled, (_, { payload }) => ({
       loading: false,
       groceryItems: payload,

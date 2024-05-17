@@ -24,11 +24,8 @@ type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 export function Recipes({ navigation }: RecipesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-
   const { user } = useAuthentication();
-
   const dispatch = useAppDispatch();
-
   const recipes = useAppSelector(selectAllRecipes);
   const sortOption = useAppSelector(getRecipeSortOption);
 

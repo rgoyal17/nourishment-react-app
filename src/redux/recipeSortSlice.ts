@@ -31,7 +31,7 @@ export const updateRecipeSortOption = createAsyncThunk(
 );
 
 const recipeSortOptionSlice = createSlice({
-  name: "recipes",
+  name: "recipesSortOption",
   initialState: SortOption.Name,
   reducers: {},
   extraReducers(builder) {

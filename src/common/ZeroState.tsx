@@ -8,7 +8,7 @@ interface ZeroStateProps {
   imgStyle?: StyleProp<ImageStyle>;
   title: string;
   subtitle: string;
-  actionButtonProps: ButtonProps;
+  actionButtonProps?: ButtonProps;
 }
 export function ZeroState({
   imgSrc,
@@ -25,7 +25,9 @@ export function ZeroState({
       <Image source={imgSrc} style={compact([styles.image, imgStyle])} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subText}>{subtitle}</Text>
-      <Button {...actionButtonProps} style={styles.action} radius={10} />
+      {actionButtonProps == null ? null : (
+        <Button {...actionButtonProps} style={styles.action} radius={10} />
+      )}
     </View>
   );
 }

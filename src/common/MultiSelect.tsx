@@ -66,31 +66,30 @@ export function MultiSelect<T extends SelectItemProps>({
   );
 
   return (
-    <>
-      <View style={styles.selector}>
-        <View style={selectedItems.length > 0 ? styles.selectedItemsContainer : undefined}>
-          {selectedItems.map((item, index) => (
-            <View key={index} style={styles.selectedItem}>
-              <Text style={{ flex: 1 }} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Button
-                buttonStyle={{ paddingRight: 0, marginRight: 0 }}
-                icon={<Icon color={error} name="cross" size={20} type="entypo" />}
-                size="sm"
-                type="clear"
-                onPress={handleRemoveItem(item)}
-              />
-            </View>
-          ))}
-        </View>
-        <TouchableOpacity onPress={() => bottomSheetRef.current?.present()}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.labelText}>{selectInputLabel}</Text>
-            <Icon color={grey3} name="caret-down" size={20} type="font-awesome" />
+    <View style={styles.selector}>
+      <ScrollView style={selectedItems.length > 0 ? styles.selectedItemsContainer : undefined}>
+        {selectedItems.map((item, index) => (
+          <View key={index} style={styles.selectedItem}>
+            <Text style={{ flex: 1 }} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <Button
+              buttonStyle={{ paddingRight: 0, marginRight: 0 }}
+              icon={<Icon color={error} name="cross" size={20} type="entypo" />}
+              size="sm"
+              type="clear"
+              onPress={handleRemoveItem(item)}
+            />
           </View>
-        </TouchableOpacity>
-      </View>
+        ))}
+      </ScrollView>
+      <TouchableOpacity onPress={() => bottomSheetRef.current?.present()}>
+        <View style={styles.labelContainer}>
+          <Text style={styles.labelText}>{selectInputLabel}</Text>
+          <Icon color={grey3} name="caret-down" size={20} type="font-awesome" />
+        </View>
+      </TouchableOpacity>
+
       <BottomSheetModal
         enablePanDownToClose
         ref={bottomSheetRef}
@@ -125,7 +124,7 @@ export function MultiSelect<T extends SelectItemProps>({
           <Button buttonStyle={styles.finalButton} title={submitButtonLabel} onPress={handleDone} />
         </View>
       </BottomSheetModal>
-    </>
+    </View>
   );
 }
 
@@ -138,6 +137,7 @@ const makeStyles = (colors: Colors) =>
     },
     selectedItemsContainer: {
       marginBottom: 10,
+      maxHeight: 110,
     },
     selectedItem: {
       alignItems: "center",

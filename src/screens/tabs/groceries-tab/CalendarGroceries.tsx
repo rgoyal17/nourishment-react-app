@@ -1,9 +1,9 @@
 import { Colors } from "@rneui/base";
-import { Button, CheckBox, Icon, Tooltip, useTheme } from "@rneui/themed";
+import { Button, Icon, ListItem, useTheme } from "@rneui/themed";
 import React from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { getMonthDateString } from "../../../common/date";
-import { useAppDispatch } from "../../../redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { fetchCalendarItems } from "../../../redux/calendarSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useIngredientsByDate } from "../../../hooks/useIngredientsByDate";
@@ -12,9 +12,16 @@ import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/d
 import { fetchRecipes } from "../../../redux/recipesSlice";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
-import { addNewGroceryItem, fetchGroceries } from "../../../redux/groceriesSlice";
+import {
+  GroceryItem,
+  addGroceryItems,
+  fetchGroceries,
+  selectGroceriesState,
+} from "../../../redux/groceriesSlice";
 import { compact } from "lodash";
 import * as Sentry from "@sentry/react-native";
+import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { IngredientsList } from "./IngredientsList";
 
 type CalendarGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "CalendarGroceries">;
 
@@ -23,6 +30,7 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
+  const groceriesState = useAppSelector(selectGroceriesState);
 
   React.useEffect(() => {
     if (user != null) {
@@ -34,22 +42,38 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
   const [startDate, setStartDate] = React.useState(new Date());
   const [endDate, setEndDate] = React.useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
   const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [errorIngredient, setErrorIngredient] = React.useState<string>();
   const [isLoading, setIsLoading] = React.useState(false);
+
+  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const snapPoints = React.useMemo(() => ["18%"], []);
+
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          icon={
+            <Icon
+              color={theme.colors.secondary}
+              size={30}
+              name="dots-horizontal"
+              type="material-community"
+            />
+          }
+          onPress={() => bottomSheetRef.current?.present()}
+        />
+      ),
+    });
+  }, [navigation, theme.colors.secondary]);
 
   const ingredients = useIngredientsByDate(startDate, endDate);
 
-  const handleCheckChange = React.useCallback(
-    (ingredientItem: string) => () => {
-      setCheckedIngredients((prev) =>
-        prev.includes(ingredientItem)
-          ? [...prev].filter((i) => i !== ingredientItem)
-          : [...prev, ingredientItem],
-      );
-    },
-    [],
-  );
+  const handleCheckChange = React.useCallback((updatedItem: string) => {
+    setCheckedIngredients((prev) =>
+      prev.includes(updatedItem)
+        ? [...prev].filter((i) => i !== updatedItem)
+        : [...prev, updatedItem],
+    );
+  }, []);
 
   const handleSelectDate =
     (startOrEnd: "start" | "end") =>
@@ -63,15 +87,6 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
       }
     };
 
-  const handleRefresh = React.useCallback(async () => {
-    setIsRefreshing(true);
-    if (user != null) {
-      await dispatch(fetchRecipes(user.uid));
-      await dispatch(fetchCalendarItems(user.uid));
-    }
-    setIsRefreshing(false);
-  }, [dispatch, user]);
-
   const addIngredientsToGroceries = React.useCallback(async () => {
     if (user?.uid == null) {
       Alert.alert("Please sign in to add a recipe");
@@ -79,21 +94,55 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
     }
     try {
       setIsLoading(true);
-      const checkedIngredientsObjs = compact(
+      const checkedIngredientsObjs: GroceryItem[] = compact(
         checkedIngredients.map((ingr) => ingredients.find((i) => i.item === ingr)),
+      ).map((ingr) => ({ ...ingr, isChecked: false }));
+
+      await dispatch(
+        addGroceryItems({
+          userId: user.uid,
+          existingGroceryItems: groceriesState.groceryItems,
+          groceryItems: checkedIngredientsObjs,
+        }),
       );
-      for (const ingredient of checkedIngredientsObjs) {
-        await dispatch(
-          addNewGroceryItem({ userId: user.uid, groceryItem: { ...ingredient, isChecked: false } }),
-        );
-      }
+
       await dispatch(fetchGroceries(user.uid));
       navigation.navigate("GroceriesPage");
     } catch (e) {
       Sentry.captureException(e);
       Alert.alert("Failed to add grocery item");
     }
-  }, [checkedIngredients, dispatch, ingredients, navigation, user?.uid]);
+  }, [
+    checkedIngredients,
+    dispatch,
+    groceriesState.groceryItems,
+    ingredients,
+    navigation,
+    user?.uid,
+  ]);
+
+  const handleSelectAll = React.useCallback(() => {
+    const newCheckedIngredients = [...checkedIngredients];
+    ingredients.forEach((ingr) => {
+      if (!newCheckedIngredients.includes(ingr.item)) {
+        newCheckedIngredients.push(ingr.item);
+      }
+    });
+    setCheckedIngredients(newCheckedIngredients);
+    bottomSheetRef.current?.dismiss();
+  }, [checkedIngredients, ingredients]);
+
+  const handleDeselectAll = React.useCallback(() => {
+    setCheckedIngredients([]);
+    bottomSheetRef.current?.dismiss();
+  }, []);
+
+  const handleRefresh = React.useCallback(async () => {
+    if (user != null) {
+      await dispatch(fetchRecipes(user.uid));
+      await dispatch(fetchCalendarItems(user.uid));
+    }
+  }, [dispatch, user]);
 
   return (
     <View style={styles.container}>
@@ -112,56 +161,57 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
       >{`Select ingredients from recipes in calendar from ${getMonthDateString(
         startDate,
       )} to ${getMonthDateString(endDate)}:`}</Text>
-      <ScrollView
-        refreshControl={<RefreshControl onRefresh={handleRefresh} refreshing={isRefreshing} />}
-      >
-        {ingredients.length === 0 ? (
-          <ZeroState
-            imgSrc={require("../../../../assets/groceries.png")}
-            imgStyle={styles.zeroStateImg}
-            title="No Recipes Found"
-            subtitle="Add some recipes on your selected dates to view a list of ingredients here"
-            actionButtonProps={{
-              title: "Go to Calendar",
-              onPress: () =>
-                navigation.navigate("CalendarTab", { screen: "CalendarPage", params: {} }),
-            }}
-          />
-        ) : (
-          ingredients.map((ingredient, index) => (
-            <View style={styles.ingredientContainer} key={index}>
-              <CheckBox
-                containerStyle={styles.checkbox}
-                checked={checkedIngredients.includes(ingredient.item)}
-                onPress={handleCheckChange(ingredient.item)}
-              />
-              <Text style={styles.ingredient}>{ingredient.item}</Text>
-              {ingredient.error ? (
-                <Tooltip
-                  visible={errorIngredient === ingredient.item}
-                  onOpen={() => setErrorIngredient(ingredient.item)}
-                  onClose={() => setErrorIngredient(undefined)}
-                  popover={<Text>Failed to add quantities</Text>}
-                  width={180}
-                  backgroundColor={theme.colors.white}
-                >
-                  <Icon style={{ opacity: 0.6 }} color={theme.colors.error} name="error" />
-                </Tooltip>
-              ) : (
-                <Text style={styles.rightText}>
-                  {ingredient.quantity} {ingredient.unit}
-                </Text>
-              )}
-            </View>
-          ))
+      {ingredients.length === 0 ? (
+        <ZeroState
+          imgSrc={require("../../../../assets/groceries.png")}
+          imgStyle={styles.zeroStateImg}
+          title="No Recipes Found"
+          subtitle="Add some recipes on your selected dates to view a list of ingredients here"
+          actionButtonProps={{
+            title: "Go to Calendar",
+            onPress: () =>
+              navigation.navigate("CalendarTab", { screen: "CalendarPage", params: {} }),
+          }}
+        />
+      ) : (
+        <IngredientsList
+          ingredients={ingredients}
+          checkedIngredients={checkedIngredients}
+          onCheckChange={handleCheckChange}
+          onRefresh={handleRefresh}
+        />
+      )}
+      {checkedIngredients.length > 0 ? (
+        <Button
+          containerStyle={{ alignItems: "center" }}
+          loading={isLoading}
+          buttonStyle={styles.doneButton}
+          title="Add to Grocery List"
+          onPress={addIngredientsToGroceries}
+        />
+      ) : null}
+
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={bottomSheetRef}
+        snapPoints={snapPoints}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
         )}
-      </ScrollView>
-      <Button
-        loading={isLoading}
-        buttonStyle={styles.doneButton}
-        title="Done"
-        onPress={addIngredientsToGroceries}
-      />
+      >
+        <ListItem onPress={handleSelectAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="check" type="entypo" />
+            <ListItem.Title>Select all</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem onPress={handleDeselectAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="cross" type="entypo" />
+            <ListItem.Title>Deselect all</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -198,27 +248,16 @@ const makeStyles = (colors: Colors) =>
       height: 170,
       width: 170,
     },
-    ingredientContainer: {
-      paddingHorizontal: 10,
-      paddingVertical: 15,
-      borderBottomColor: colors.primary,
-      borderBottomWidth: 0.2,
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    checkbox: {
-      padding: 0,
-      margin: 0,
-      backgroundColor: colors.secondary,
-    },
-    ingredient: {
-      fontSize: 15,
-      flex: 1,
-    },
-    rightText: {
-      color: colors.grey2,
-    },
     doneButton: {
       borderRadius: 10,
+      marginBottom: 10,
+      width: 300,
+    },
+    bottomSheetOption: {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      alignItems: "center",
+      columnGap: 10,
     },
   });
