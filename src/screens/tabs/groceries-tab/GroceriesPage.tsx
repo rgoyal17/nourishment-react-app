@@ -243,7 +243,7 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
         </ListItem>
         <ListItem onPress={handleDeleteCheckedItems}>
           <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="delete" />
+            <Icon name="remove-circle" />
             <ListItem.Title>
               {isDeletingChecked ? "Deleting..." : "Delete checked items"}
             </ListItem.Title>
