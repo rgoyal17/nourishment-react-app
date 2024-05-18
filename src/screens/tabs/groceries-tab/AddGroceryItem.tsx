@@ -39,7 +39,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const [stagedGroceryItem, setStagedGroceryItem] =
     React.useState<GroceryItem>(INITIAL_GROCERY_ITEM);
 
-  const [isAdding, setIsAdding] = React.useState(false);
+  const [isAdding, setIsAdding] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const unitBottomSheetRef = React.useRef<BottomSheetModal>(null);
@@ -85,6 +85,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const handleEditItem = React.useCallback(
     (item: GroceryItem) => () => {
       setGroceryItems((existingItems) => existingItems.filter((i) => i.item !== item.item));
+      setStagedGroceryItem(item);
       setIsAdding(true);
     },
     [],
@@ -116,7 +117,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={{ padding: 15 }} contentContainerStyle={{ rowGap: 10 }}>
+      <ScrollView style={{ padding: 15 }} contentContainerStyle={{ rowGap: 10, paddingBottom: 40 }}>
         {groceryItems.map((item, index) => (
           <View style={{ flexDirection: "row", alignItems: "center", columnGap: 5 }} key={index}>
             <Text style={{ flex: 1 }}>{item.item}</Text>
@@ -132,7 +133,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
         {!isAdding ? (
           <Button
             buttonStyle={{ borderRadius: 10 }}
-            title="Add an item"
+            title={groceryItems.length === 0 ? "Add an item" : "Add more items"}
             onPress={() => setIsAdding(true)}
           />
         ) : (
