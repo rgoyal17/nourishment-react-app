@@ -54,7 +54,7 @@ export function GroceriesTab() {
       <Stack.Screen
         name="AddGroceryItem"
         component={AddGroceryItem}
-        options={{ title: "Add new item" }}
+        options={{ title: "Add new items" }}
       />
       <Stack.Screen
         name="FindRecipes"

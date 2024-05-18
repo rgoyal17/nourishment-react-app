@@ -2,7 +2,7 @@ import React from "react";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import { View, StyleSheet } from "react-native";
-import { Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
+import { Button, Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
@@ -26,16 +26,91 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
 
   const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const addSnapPoints = React.useMemo(() => ["25%"], []);
+  const optionsBottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const optionsSnapPoints = React.useMemo(() => ["30%"], []);
 
   const [checkedGroceries, setCheckedGroceries] = React.useState<string[]>(
     groceries.filter((item) => item.isChecked).map((item) => item.item),
   );
+  const [isDeletingAll, setIsDeletingAll] = React.useState(false);
+  const [isDeletingChecked, setIsDeletingChecked] = React.useState(false);
 
   React.useEffect(() => {
     if (user != null) {
       dispatch(fetchGroceries(user.uid));
     }
   }, [dispatch, user]);
+
+  React.useEffect(() => {
+    setCheckedGroceries(groceries.filter((item) => item.isChecked).map((item) => item.item));
+  }, [groceries]);
+
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          icon={
+            <Icon
+              color={theme.colors.secondary}
+              size={30}
+              name="dots-horizontal"
+              type="material-community"
+            />
+          }
+          onPress={() => optionsBottomSheetRef.current?.present()}
+        />
+      ),
+    });
+  }, [navigation, theme.colors.secondary]);
+
+  const handleSelectAll = React.useCallback(async () => {
+    setCheckedGroceries(groceries.map((item) => item.item));
+    optionsBottomSheetRef.current?.dismiss();
+    const updatedGroceries = groceries.map((existingItem) => ({
+      ...existingItem,
+      isChecked: true,
+    }));
+    if (user != null) {
+      await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
+      await dispatch(fetchGroceries(user.uid));
+    }
+  }, [dispatch, groceries, user]);
+
+  const handleDeselectAll = React.useCallback(async () => {
+    setCheckedGroceries([]);
+    optionsBottomSheetRef.current?.dismiss();
+    const updatedGroceries = groceries.map((existingItem) => ({
+      ...existingItem,
+      isChecked: false,
+    }));
+    if (user != null) {
+      await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
+      await dispatch(fetchGroceries(user.uid));
+    }
+  }, [dispatch, groceries, user]);
+
+  const handleDeleteAll = React.useCallback(async () => {
+    setIsDeletingAll(true);
+    if (user != null) {
+      await dispatch(setGroceryItems({ userId: user.uid, groceryItems: [] }));
+      await dispatch(fetchGroceries(user.uid));
+    }
+    setCheckedGroceries([]);
+    optionsBottomSheetRef.current?.dismiss();
+    setIsDeletingAll(false);
+  }, [dispatch, user]);
+
+  const handleDeleteCheckedItems = React.useCallback(async () => {
+    setIsDeletingChecked(true);
+    const updatedGroceries = groceries.filter((item) => !item.isChecked);
+    if (user != null) {
+      await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
+      await dispatch(fetchGroceries(user.uid));
+    }
+    setCheckedGroceries([]);
+    optionsBottomSheetRef.current?.dismiss();
+    setIsDeletingChecked(false);
+  }, [dispatch, groceries, user]);
 
   const handleAddItem = React.useCallback(() => {
     addBottomSheetRef.current?.dismiss();
@@ -121,7 +196,7 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
         <ListItem onPress={handleAddItem}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="add" type="ionicon" />
-            <ListItem.Title>Add new item</ListItem.Title>
+            <ListItem.Title>Add new items</ListItem.Title>
           </ListItem.Content>
         </ListItem>
         <ListItem onPress={handleImportFromRecipes}>
@@ -134,6 +209,42 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="calendar" type="font-awesome" />
             <ListItem.Title>Meal prep calendar</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </BottomSheetModal>
+
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={optionsBottomSheetRef}
+        snapPoints={optionsSnapPoints}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
+      >
+        <ListItem onPress={handleSelectAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="check" type="entypo" />
+            <ListItem.Title>Select all</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem onPress={handleDeselectAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="cross" type="entypo" />
+            <ListItem.Title>Deselect all</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem onPress={handleDeleteAll}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="delete" />
+            <ListItem.Title>{isDeletingAll ? "Deleting..." : "Delete all"}</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+        <ListItem onPress={handleDeleteCheckedItems}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="delete" />
+            <ListItem.Title>
+              {isDeletingChecked ? "Deleting..." : "Delete checked items"}
+            </ListItem.Title>
           </ListItem.Content>
         </ListItem>
       </BottomSheetModal>

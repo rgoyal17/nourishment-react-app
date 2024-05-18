@@ -72,7 +72,7 @@ export function IngredientsAndInstructions({
                           ) : null}
                         </View>
                         <Text style={styles.rightText}>
-                          {ingredient.quantity} {ingredient.unit}
+                          {`${ingredient.quantity} ${ingredient.unit}`.trim()}
                         </Text>
                       </View>
                     ))}
