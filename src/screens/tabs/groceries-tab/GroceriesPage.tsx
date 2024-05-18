@@ -6,6 +6,7 @@ import { Button, Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
+  GroceryItem,
   fetchGroceries,
   selectGroceriesState,
   setGroceryItems,
@@ -13,6 +14,7 @@ import {
 import { ZeroState } from "../../../common/ZeroState";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { IngredientsList } from "./IngredientsList";
+import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 
 type GroceriesProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
 
@@ -22,18 +24,22 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
-  const groceries = groceriesState.groceryItems;
+  const [groceries, setGroceries] = React.useState(groceriesState.groceryItems);
 
   const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const addSnapPoints = React.useMemo(() => ["25%"], []);
   const optionsBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const optionsSnapPoints = React.useMemo(() => ["30%"], []);
 
-  const [checkedGroceries, setCheckedGroceries] = React.useState<string[]>(
-    groceries.filter((item) => item.isChecked).map((item) => item.item),
-  );
   const [isDeletingAll, setIsDeletingAll] = React.useState(false);
   const [isDeletingChecked, setIsDeletingChecked] = React.useState(false);
+  const [isSelectingAll, setIsSelectingAll] = React.useState(false);
+  const [isDeselectingAll, setIsDeselectingAll] = React.useState(false);
+
+  const checkedGroceries = React.useMemo(
+    () => groceries.filter((item) => item.isChecked).map((item) => item.item),
+    [groceries],
+  );
 
   React.useEffect(() => {
     if (user != null) {
@@ -42,8 +48,19 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   }, [dispatch, user]);
 
   React.useEffect(() => {
-    setCheckedGroceries(groceries.filter((item) => item.isChecked).map((item) => item.item));
-  }, [groceries]);
+    setGroceries(groceriesState.groceryItems);
+  }, [groceriesState.groceryItems]);
+
+  React.useEffect(() => {
+    if (user?.uid != null) {
+      const db = getFirestore();
+      const unsub = onSnapshot(doc(db, `users/${user.uid}`), (doc) => {
+        const latestGroceries = (doc.data()?.groceries as GroceryItem[]) ?? [];
+        setGroceries(latestGroceries);
+      });
+      return () => unsub();
+    }
+  }, [user?.uid]);
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -64,38 +81,36 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   }, [navigation, theme.colors.secondary]);
 
   const handleSelectAll = React.useCallback(async () => {
-    setCheckedGroceries(groceries.map((item) => item.item));
-    optionsBottomSheetRef.current?.dismiss();
+    setIsSelectingAll(true);
     const updatedGroceries = groceries.map((existingItem) => ({
       ...existingItem,
       isChecked: true,
     }));
     if (user != null) {
       await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
-      await dispatch(fetchGroceries(user.uid));
     }
+    setIsSelectingAll(false);
+    optionsBottomSheetRef.current?.dismiss();
   }, [dispatch, groceries, user]);
 
   const handleDeselectAll = React.useCallback(async () => {
-    setCheckedGroceries([]);
-    optionsBottomSheetRef.current?.dismiss();
+    setIsDeselectingAll(true);
     const updatedGroceries = groceries.map((existingItem) => ({
       ...existingItem,
       isChecked: false,
     }));
     if (user != null) {
       await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
-      await dispatch(fetchGroceries(user.uid));
     }
+    setIsDeselectingAll(false);
+    optionsBottomSheetRef.current?.dismiss();
   }, [dispatch, groceries, user]);
 
   const handleDeleteAll = React.useCallback(async () => {
     setIsDeletingAll(true);
     if (user != null) {
       await dispatch(setGroceryItems({ userId: user.uid, groceryItems: [] }));
-      await dispatch(fetchGroceries(user.uid));
     }
-    setCheckedGroceries([]);
     optionsBottomSheetRef.current?.dismiss();
     setIsDeletingAll(false);
   }, [dispatch, user]);
@@ -105,9 +120,7 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
     const updatedGroceries = groceries.filter((item) => !item.isChecked);
     if (user != null) {
       await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
-      await dispatch(fetchGroceries(user.uid));
     }
-    setCheckedGroceries([]);
     optionsBottomSheetRef.current?.dismiss();
     setIsDeletingChecked(false);
   }, [dispatch, groceries, user]);
@@ -135,12 +148,6 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
 
   const handleCheckChange = React.useCallback(
     async (changedItem: string) => {
-      setCheckedGroceries((prev) =>
-        prev.includes(changedItem)
-          ? [...prev].filter((i) => i !== changedItem)
-          : [...prev, changedItem],
-      );
-
       const updatedGroceries = groceries.map((existingItem) =>
         existingItem.item === changedItem
           ? { ...existingItem, isChecked: !existingItem.isChecked }
@@ -148,7 +155,6 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
       );
       if (user != null) {
         await dispatch(setGroceryItems({ userId: user.uid, groceryItems: updatedGroceries }));
-        await dispatch(fetchGroceries(user.uid));
       }
     },
     [dispatch, groceries, user],
@@ -224,13 +230,13 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
         <ListItem onPress={handleSelectAll}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="check" type="entypo" />
-            <ListItem.Title>Select all</ListItem.Title>
+            <ListItem.Title>{isSelectingAll ? "Selecting..." : "Select all"}</ListItem.Title>
           </ListItem.Content>
         </ListItem>
         <ListItem onPress={handleDeselectAll}>
           <ListItem.Content style={styles.bottomSheetOption}>
             <Icon name="cross" type="entypo" />
-            <ListItem.Title>Deselect all</ListItem.Title>
+            <ListItem.Title>{isDeselectingAll ? "Deselecting..." : "Deselect all"}</ListItem.Title>
           </ListItem.Content>
         </ListItem>
         <ListItem onPress={handleDeleteAll}>
