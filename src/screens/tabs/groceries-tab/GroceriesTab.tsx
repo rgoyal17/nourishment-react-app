@@ -4,7 +4,6 @@ import React from "react";
 import { HEADER_HEIGHT } from "../../../common/constants";
 import { GroceriesPage } from "./GroceriesPage";
 import { CalendarTabStackParamList } from "../calendar-tab/CalendarTab";
-import { FindRecipes } from "./FindRecipes";
 import { RecipesTabStackParamList } from "../recipes-tab/RecipesTab";
 import { CalendarGroceries } from "./CalendarGroceries";
 import { RecipeGroceries } from "./RecipeGroceries";
@@ -55,11 +54,6 @@ export function GroceriesTab() {
         name="AddGroceryItem"
         component={AddGroceryItem}
         options={{ title: "Add new items" }}
-      />
-      <Stack.Screen
-        name="FindRecipes"
-        component={FindRecipes}
-        options={{ title: "Find Recipes" }}
       />
     </Stack.Navigator>
   );

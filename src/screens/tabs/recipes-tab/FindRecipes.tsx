@@ -15,7 +15,7 @@ import { MultiSelect } from "../../../common/MultiSelect";
 import { compact } from "lodash";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { StackScreenProps } from "@react-navigation/stack";
-import { GroceriesTabStackParamList } from "./GroceriesTab";
+import { GroceriesTabStackParamList } from "../groceries-tab/GroceriesTab";
 
 type FindRecipesProps = StackScreenProps<GroceriesTabStackParamList, "FindRecipes">;
 

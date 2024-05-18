@@ -34,6 +34,8 @@ export function Recipes({ navigation }: RecipesProps) {
 
   const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const addSnapPoints = React.useMemo(() => ["20%"], []);
+  const optionsBottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const optionsSnapPoints = React.useMemo(() => ["12%"], []);
 
   const importBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const importSnapPoints = React.useMemo(() => ["30%", "70%"], []);
@@ -61,6 +63,24 @@ export function Recipes({ navigation }: RecipesProps) {
       );
     }
   }, [filteredRecipes, sortOption]);
+
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          icon={
+            <Icon
+              color={theme.colors.secondary}
+              size={30}
+              name="dots-horizontal"
+              type="material-community"
+            />
+          }
+          onPress={() => optionsBottomSheetRef.current?.present()}
+        />
+      ),
+    });
+  }, [navigation, theme.colors.secondary]);
 
   React.useEffect(() => {
     if (user != null) {
@@ -130,6 +150,11 @@ export function Recipes({ navigation }: RecipesProps) {
       setLoading(false);
     }
   }, [navigation, recipeUrl]);
+
+  const handleFindRecipes = React.useCallback(() => {
+    optionsBottomSheetRef.current?.dismiss();
+    navigation.navigate("FindRecipes");
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -246,6 +271,22 @@ export function Recipes({ navigation }: RecipesProps) {
             loading={loading}
           />
         </View>
+      </BottomSheetModal>
+
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={optionsBottomSheetRef}
+        snapPoints={optionsSnapPoints}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
+      >
+        <ListItem onPress={handleFindRecipes}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name="search" />
+            <ListItem.Title>Find recipes from ingredients</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
       </BottomSheetModal>
     </View>
   );

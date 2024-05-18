@@ -7,11 +7,13 @@ import { Button, useTheme } from "@rneui/themed";
 import { Icon } from "@rneui/base";
 import { Recipe } from "../../../redux/recipesSlice";
 import { HEADER_HEIGHT } from "../../../common/constants";
+import { FindRecipes } from "./FindRecipes";
 
 export type RecipesTabStackParamList = {
   AddOrEditRecipe: { recipe?: Recipe; source: "scratch" | "import" | "edit" };
   RecipeItem: { recipe: Recipe };
   Recipes: undefined;
+  FindRecipes: undefined;
 };
 
 const Stack = createStackNavigator<RecipesTabStackParamList>();
@@ -37,6 +39,11 @@ export function RecipesTab() {
       />
       <Stack.Screen name="RecipeItem" component={RecipeItem} options={{ title: "" }} />
       <Stack.Screen name="Recipes" component={Recipes} />
+      <Stack.Screen
+        name="FindRecipes"
+        component={FindRecipes}
+        options={{ title: "Find Recipes" }}
+      />
     </Stack.Navigator>
   );
 }
