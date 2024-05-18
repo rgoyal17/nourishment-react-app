@@ -2,14 +2,13 @@ import { Colors } from "@rneui/base";
 import { Button, Icon, ListItem, useTheme } from "@rneui/themed";
 import React from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
-import { getMonthDateString } from "../../../common/date";
+import { getDatesInRange, getMonthDateString } from "../../../common/date";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
-import { fetchCalendarItems } from "../../../redux/calendarSlice";
+import { fetchCalendarItems, selectAllCalendarItems } from "../../../redux/calendarSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
-import { useIngredientsByDate } from "../../../hooks/useIngredientsByDate";
 import { ZeroState } from "../../../common/ZeroState";
 import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { fetchRecipes } from "../../../redux/recipesSlice";
+import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import {
@@ -21,7 +20,8 @@ import {
 import { compact } from "lodash";
 import * as Sentry from "@sentry/react-native";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { IngredientsList } from "./IngredientsList";
+import { GroceriesList } from "./GroceriesList";
+import { combineIngredients } from "../../../common/combineIngredients";
 
 type CalendarGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "CalendarGroceries">;
 
@@ -31,6 +31,8 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
+  const allCalendarItems = useAppSelector(selectAllCalendarItems);
+  const allRecipes = useAppSelector(selectAllRecipes);
 
   React.useEffect(() => {
     if (user != null) {
@@ -41,11 +43,29 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
 
   const [startDate, setStartDate] = React.useState(new Date());
   const [endDate, setEndDate] = React.useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-  const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
   const snapPoints = React.useMemo(() => ["18%"], []);
+
+  const [groceryItems, setGroceryItems] = React.useState<GroceryItem[]>([]);
+
+  // when start or end date is updated, we need to update the groceryItems state.
+  React.useEffect(() => {
+    const dates = getDatesInRange(startDate, endDate);
+    const calendarItems = allCalendarItems.filter((item) => dates.includes(item.date));
+    const recipeIds = calendarItems.flatMap(
+      (item) => item.recipeData.flatMap((data) => data.recipeIds) ?? [],
+    );
+    const recipes = compact(recipeIds.map((id) => allRecipes.find((recipe) => recipe.id === id)));
+    const allIngredients = recipes.flatMap((recipe) => recipe.ingredientsParsed);
+    setGroceryItems(
+      combineIngredients(allIngredients).map((i) => ({
+        ...i,
+        isChecked: true,
+      })),
+    );
+  }, [startDate, endDate, allCalendarItems, allRecipes]);
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -65,13 +85,9 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
     });
   }, [navigation, theme.colors.secondary]);
 
-  const ingredients = useIngredientsByDate(startDate, endDate);
-
   const handleCheckChange = React.useCallback((updatedItem: string) => {
-    setCheckedIngredients((prev) =>
-      prev.includes(updatedItem)
-        ? [...prev].filter((i) => i !== updatedItem)
-        : [...prev, updatedItem],
+    setGroceryItems((prev) =>
+      prev.map((i) => (i.item === updatedItem ? { ...i, isChecked: !i.isChecked } : i)),
     );
   }, []);
 
@@ -87,22 +103,20 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
       }
     };
 
-  const addIngredientsToGroceries = React.useCallback(async () => {
+  const addSelectedItemsToGroceries = React.useCallback(async () => {
     if (user?.uid == null) {
       Alert.alert("Please sign in to add a recipe");
       return;
     }
     try {
       setIsLoading(true);
-      const checkedIngredientsObjs: GroceryItem[] = compact(
-        checkedIngredients.map((ingr) => ingredients.find((i) => i.item === ingr)),
-      ).map((ingr) => ({ ...ingr, isChecked: false }));
-
       await dispatch(
         addGroceryItems({
           userId: user.uid,
           existingGroceryItems: groceriesState.groceryItems,
-          groceryItems: checkedIngredientsObjs,
+          groceryItems: groceryItems
+            .filter((i) => i.isChecked)
+            .map((i) => ({ ...i, isChecked: false })),
         }),
       );
 
@@ -112,28 +126,15 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
       Sentry.captureException(e);
       Alert.alert("Failed to add grocery item");
     }
-  }, [
-    checkedIngredients,
-    dispatch,
-    groceriesState.groceryItems,
-    ingredients,
-    navigation,
-    user?.uid,
-  ]);
+  }, [dispatch, groceriesState.groceryItems, groceryItems, navigation, user?.uid]);
 
   const handleSelectAll = React.useCallback(() => {
-    const newCheckedIngredients = [...checkedIngredients];
-    ingredients.forEach((ingr) => {
-      if (!newCheckedIngredients.includes(ingr.item)) {
-        newCheckedIngredients.push(ingr.item);
-      }
-    });
-    setCheckedIngredients(newCheckedIngredients);
+    setGroceryItems((prev) => prev.map((i) => ({ ...i, isChecked: true })));
     bottomSheetRef.current?.dismiss();
-  }, [checkedIngredients, ingredients]);
+  }, []);
 
   const handleDeselectAll = React.useCallback(() => {
-    setCheckedIngredients([]);
+    setGroceryItems((prev) => prev.map((i) => ({ ...i, isChecked: false })));
     bottomSheetRef.current?.dismiss();
   }, []);
 
@@ -143,6 +144,11 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
       await dispatch(fetchCalendarItems(user.uid));
     }
   }, [dispatch, user]);
+
+  const isAtLeastOneChecked = React.useMemo(
+    () => groceryItems.some((i) => i.isChecked),
+    [groceryItems],
+  );
 
   return (
     <View style={styles.container}>
@@ -161,7 +167,7 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
       >{`Select ingredients from recipes in calendar from ${getMonthDateString(
         startDate,
       )} to ${getMonthDateString(endDate)}:`}</Text>
-      {ingredients.length === 0 ? (
+      {groceryItems.length === 0 ? (
         <ZeroState
           imgSrc={require("../../../../assets/groceries.png")}
           imgStyle={styles.zeroStateImg}
@@ -174,20 +180,19 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
           }}
         />
       ) : (
-        <IngredientsList
-          ingredients={ingredients}
-          checkedIngredients={checkedIngredients}
+        <GroceriesList
+          groceries={groceryItems}
           onCheckChange={handleCheckChange}
           onRefresh={handleRefresh}
         />
       )}
-      {checkedIngredients.length > 0 ? (
+      {isAtLeastOneChecked ? (
         <Button
           containerStyle={{ alignItems: "center" }}
           loading={isLoading}
           buttonStyle={styles.doneButton}
           title="Add to Grocery List"
-          onPress={addIngredientsToGroceries}
+          onPress={addSelectedItemsToGroceries}
         />
       ) : null}
 

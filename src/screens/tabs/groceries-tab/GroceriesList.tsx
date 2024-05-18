@@ -2,25 +2,19 @@ import React from "react";
 import { ScrollView, View, Text, StyleSheet, RefreshControl } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { CheckBox, Colors, Icon, Tooltip, useTheme } from "@rneui/themed";
-import { Ingredient } from "../../../redux/recipesSlice";
+import { GroceryItem } from "../../../redux/groceriesSlice";
 
-interface IngredientsListProps {
-  ingredients: Ingredient[];
-  checkedIngredients: string[];
+interface GroceriesListProps {
+  groceries: GroceryItem[];
   onCheckChange: (item: string) => void;
   onRefresh: () => Promise<void>;
 }
 
-export function IngredientsList({
-  ingredients,
-  checkedIngredients,
-  onCheckChange,
-  onRefresh,
-}: IngredientsListProps) {
+export function GroceriesList({ groceries, onCheckChange, onRefresh }: GroceriesListProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [errorIngredient, setErrorIngredient] = React.useState<string>();
+  const [errorGroceryItem, setErrorGroceryItem] = React.useState<string>();
 
   const handleRefresh = React.useCallback(async () => {
     setIsRefreshing(true);
@@ -28,29 +22,24 @@ export function IngredientsList({
     setIsRefreshing(false);
   }, [onRefresh]);
 
-  const isItemChecked = React.useCallback(
-    (item: Ingredient) => checkedIngredients.includes(item.item),
-    [checkedIngredients],
-  );
-
   return (
     <ScrollView
       refreshControl={<RefreshControl onRefresh={handleRefresh} refreshing={isRefreshing} />}
     >
-      {ingredients.map((item, index) => (
+      {groceries.map((item, index) => (
         <View style={styles.itemContainer} key={index}>
           <TouchableOpacity
             style={{ flexDirection: "row", alignItems: "center" }}
             onPress={() => onCheckChange(item.item)}
           >
-            <CheckBox containerStyle={styles.checkbox} checked={isItemChecked(item)} />
+            <CheckBox containerStyle={styles.checkbox} checked={item.isChecked} />
             <Text style={styles.item}>{item.item}</Text>
           </TouchableOpacity>
           {item.error ? (
             <Tooltip
-              visible={errorIngredient === item.item}
-              onOpen={() => setErrorIngredient(item.item)}
-              onClose={() => setErrorIngredient(undefined)}
+              visible={errorGroceryItem === item.item}
+              onOpen={() => setErrorGroceryItem(item.item)}
+              onClose={() => setErrorGroceryItem(undefined)}
               popover={<Text>Failed to add quantities</Text>}
               width={180}
               backgroundColor={theme.colors.white}

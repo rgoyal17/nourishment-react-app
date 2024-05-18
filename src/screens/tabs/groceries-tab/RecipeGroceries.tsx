@@ -6,7 +6,7 @@ import { Recipe, fetchRecipes, selectAllRecipes } from "../../../redux/recipesSl
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { MultiSelect } from "../../../common/MultiSelect";
 import { combineIngredients } from "../../../common/combineIngredients";
-import { IngredientsList } from "./IngredientsList";
+import { GroceriesList } from "./GroceriesList";
 import { ZeroState } from "../../../common/ZeroState";
 import {
   GroceryItem,
@@ -14,7 +14,6 @@ import {
   fetchGroceries,
   selectGroceriesState,
 } from "../../../redux/groceriesSlice";
-import { compact } from "lodash";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import * as Sentry from "@sentry/react-native";
@@ -33,12 +32,9 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
   const snapPoints = React.useMemo(() => ["18%"], []);
 
   const [selectedRecipes, setSelectedRecipes] = React.useState<Recipe[]>([]);
-  const [checkedIngredients, setCheckedIngredients] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const ingredients = combineIngredients(
-    selectedRecipes.flatMap((recipe) => recipe.ingredientsParsed),
-  );
+  const [groceryItems, setGroceryItems] = React.useState<GroceryItem[]>([]);
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -64,6 +60,16 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
     }
   }, [dispatch, user]);
 
+  const handleSelectRecipes = React.useCallback((items: Recipe[]) => {
+    setSelectedRecipes(items);
+    setGroceryItems(
+      combineIngredients(items.flatMap((recipe) => recipe.ingredientsParsed)).map((i) => ({
+        ...i,
+        isChecked: true,
+      })),
+    );
+  }, []);
+
   const handleRefresh = React.useCallback(async () => {
     if (user != null) {
       await dispatch(fetchRecipes(user.uid));
@@ -71,10 +77,8 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
   }, [dispatch, user]);
 
   const handleCheckChange = React.useCallback((updatedItem: string) => {
-    setCheckedIngredients((prev) =>
-      prev.includes(updatedItem)
-        ? [...prev].filter((i) => i !== updatedItem)
-        : [...prev, updatedItem],
+    setGroceryItems((prev) =>
+      prev.map((i) => (i.item === updatedItem ? { ...i, isChecked: !i.isChecked } : i)),
     );
   }, []);
 
@@ -85,15 +89,14 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
     }
     try {
       setIsLoading(true);
-      const checkedIngredientsObjs: GroceryItem[] = compact(
-        checkedIngredients.map((ingr) => ingredients.find((i) => i.item === ingr)),
-      ).map((ingr) => ({ ...ingr, isChecked: false }));
 
       await dispatch(
         addGroceryItems({
           userId: user.uid,
           existingGroceryItems: groceriesState.groceryItems,
-          groceryItems: checkedIngredientsObjs,
+          groceryItems: groceryItems
+            .filter((i) => i.isChecked)
+            .map((i) => ({ ...i, isChecked: false })),
         }),
       );
 
@@ -103,30 +106,22 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
       Sentry.captureException(e);
       Alert.alert("Failed to add grocery item");
     }
-  }, [
-    checkedIngredients,
-    dispatch,
-    groceriesState.groceryItems,
-    ingredients,
-    navigation,
-    user?.uid,
-  ]);
+  }, [dispatch, groceriesState.groceryItems, groceryItems, navigation, user?.uid]);
 
   const handleSelectAll = React.useCallback(() => {
-    const newCheckedIngredients = [...checkedIngredients];
-    ingredients.forEach((ingr) => {
-      if (!newCheckedIngredients.includes(ingr.item)) {
-        newCheckedIngredients.push(ingr.item);
-      }
-    });
-    setCheckedIngredients(newCheckedIngredients);
-    bottomSheetRef.current?.dismiss();
-  }, [checkedIngredients, ingredients]);
-
-  const handleDeselectAll = React.useCallback(() => {
-    setCheckedIngredients([]);
+    setGroceryItems((prev) => prev.map((i) => ({ ...i, isChecked: true })));
     bottomSheetRef.current?.dismiss();
   }, []);
+
+  const handleDeselectAll = React.useCallback(() => {
+    setGroceryItems((prev) => prev.map((i) => ({ ...i, isChecked: false })));
+    bottomSheetRef.current?.dismiss();
+  }, []);
+
+  const isAtLeastOneChecked = React.useMemo(
+    () => groceryItems.some((i) => i.isChecked),
+    [groceryItems],
+  );
 
   return (
     <View style={styles.container}>
@@ -137,10 +132,10 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
           selectedItems={selectedRecipes}
           selectInputLabel="Select recipes..."
           submitButtonLabel="Done"
-          onSelectItems={(items) => setSelectedRecipes(items)}
+          onSelectItems={handleSelectRecipes}
         />
       </View>
-      {ingredients.length === 0 ? (
+      {groceryItems.length === 0 ? (
         <ZeroState
           imgSrc={require("../../../../assets/groceries.png")}
           imgStyle={styles.zeroStateImg}
@@ -148,14 +143,13 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
           subtitle="Select some recipes to view a list of ingredients here"
         />
       ) : (
-        <IngredientsList
-          ingredients={ingredients}
-          checkedIngredients={checkedIngredients}
+        <GroceriesList
+          groceries={groceryItems}
           onCheckChange={handleCheckChange}
           onRefresh={handleRefresh}
         />
       )}
-      {checkedIngredients.length > 0 ? (
+      {isAtLeastOneChecked ? (
         <Button
           containerStyle={{ alignItems: "center" }}
           loading={isLoading}

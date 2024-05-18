@@ -47,7 +47,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const categoriesBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const categoriesSnapPoints = React.useMemo(() => ["45%"], []);
 
-  const addIngredientsToGroceries = React.useCallback(async () => {
+  const addItemsToGroceries = React.useCallback(async () => {
     if (user?.uid == null) {
       Alert.alert("Please sign in to add a recipe");
       return;
@@ -211,7 +211,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
           loading={isLoading}
           buttonStyle={styles.doneButton}
           title="Add to Grocery List"
-          onPress={addIngredientsToGroceries}
+          onPress={addItemsToGroceries}
         />
       ) : null}
 

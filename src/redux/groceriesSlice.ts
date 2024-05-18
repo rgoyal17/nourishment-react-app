@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { Ingredient } from "./recipesSlice";
@@ -78,7 +78,11 @@ export const deleteGroceryItem = createAsyncThunk(
 const groceriesSlice = createSlice({
   name: "groceries",
   initialState,
-  reducers: {},
+  reducers: {
+    updateGroceryItems(state: GroceriesState, action: PayloadAction<GroceryItem[]>) {
+      state.groceryItems = action.payload;
+    },
+  },
   extraReducers(builder) {
     builder.addCase(fetchGroceries.pending, ({ groceryItems }) => ({
       loading: true,
@@ -90,6 +94,8 @@ const groceriesSlice = createSlice({
     }));
   },
 });
+
+export const { updateGroceryItems } = groceriesSlice.actions;
 
 export const selectGroceriesState = (state: RootState) => state.groceriesState;
 

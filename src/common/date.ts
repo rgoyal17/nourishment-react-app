@@ -9,3 +9,13 @@ export function getLocalDateString(dateObj: Date) {
 export function getMonthDateString(dateObj: Date) {
   return `${dateObj.toLocaleString("default", { month: "short" })} ${dateObj.getDate()}`;
 }
+
+export function getDatesInRange(startDate: Date, stopDate: Date) {
+  const dateArray = [];
+  const currentDate = new Date(startDate);
+  while (currentDate <= stopDate) {
+    dateArray.push(getLocalDateString(new Date(currentDate)));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return dateArray;
+}

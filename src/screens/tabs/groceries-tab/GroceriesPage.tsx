@@ -10,10 +10,11 @@ import {
   fetchGroceries,
   selectGroceriesState,
   setGroceryItems,
+  updateGroceryItems,
 } from "../../../redux/groceriesSlice";
 import { ZeroState } from "../../../common/ZeroState";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { IngredientsList } from "./IngredientsList";
+import { GroceriesList } from "./GroceriesList";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 
 type GroceriesProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
@@ -36,11 +37,6 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   const [isSelectingAll, setIsSelectingAll] = React.useState(false);
   const [isDeselectingAll, setIsDeselectingAll] = React.useState(false);
 
-  const checkedGroceries = React.useMemo(
-    () => groceries.filter((item) => item.isChecked).map((item) => item.item),
-    [groceries],
-  );
-
   React.useEffect(() => {
     if (user != null) {
       dispatch(fetchGroceries(user.uid));
@@ -57,10 +53,11 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
       const unsub = onSnapshot(doc(db, `users/${user.uid}`), (doc) => {
         const latestGroceries = (doc.data()?.groceries as GroceryItem[]) ?? [];
         setGroceries(latestGroceries);
+        dispatch(updateGroceryItems(latestGroceries));
       });
       return () => unsub();
     }
-  }, [user?.uid]);
+  }, [dispatch, user?.uid]);
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -174,9 +171,8 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
           }}
         />
       ) : (
-        <IngredientsList
-          ingredients={groceries}
-          checkedIngredients={checkedGroceries}
+        <GroceriesList
+          groceries={groceries}
           onCheckChange={handleCheckChange}
           onRefresh={handleRefresh}
         />
