@@ -1,9 +1,9 @@
 import { StackScreenProps } from "@react-navigation/stack";
-import { Colors, FAB, useTheme } from "@rneui/themed";
+import { Button, Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
 import React from "react";
 import { RefreshControl, StyleSheet, View } from "react-native";
 import { AgendaList, CalendarProvider, ExpandableCalendar } from "react-native-calendars";
-import { MarkedDates } from "react-native-calendars/src/types";
+import { DateData, MarkedDates } from "react-native-calendars/src/types";
 import { CalendarTabStackParamList } from "./CalendarTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
@@ -17,25 +17,43 @@ import { MemoizedCalendarDayItem } from "./CalendarDayItem";
 import { Recipe } from "../../../redux/recipesSlice";
 import { getLocalDateString } from "../../../common/date";
 import { ZeroState } from "../../../common/ZeroState";
+import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarPage">;
 
 export function CalendarPage({ navigation }: CalendarItemsProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { primary } = theme.colors;
+  const { primary, secondary } = theme.colors;
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
+  const calendarItems = useAppSelector(selectAllCalendarItems);
+  const relevantCalendarItems = calendarItems.filter((item) => new Date(item.date) > new Date());
 
   const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));
   const [refreshing, setRefreshing] = React.useState(false);
+  const [showPrevious, setShowPrevious] = React.useState(relevantCalendarItems.length === 0);
 
-  const calendarItems = useAppSelector(selectAllCalendarItems);
+  const optionsBottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const optionsSnapPoints = React.useMemo(() => ["12%"], []);
 
-  const agendaItems = React.useMemo(
-    () => calendarItems.map((item) => ({ title: item.date, data: [item] })),
-    [calendarItems],
-  );
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          icon={
+            <Icon color={secondary} size={30} name="dots-horizontal" type="material-community" />
+          }
+          onPress={() => optionsBottomSheetRef.current?.present()}
+        />
+      ),
+    });
+  }, [navigation, secondary, theme.colors.secondary]);
+
+  const agendaItems = React.useMemo(() => {
+    const items = showPrevious ? calendarItems : relevantCalendarItems;
+    return items.map((item) => ({ title: item.date, data: [item] }));
+  }, [calendarItems, relevantCalendarItems, showPrevious]);
 
   const markedDates = React.useMemo(() => {
     const dates: MarkedDates = {};
@@ -76,6 +94,13 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     }
   }, [dispatch, user]);
 
+  const handleDatePress = React.useCallback((dateData: DateData) => {
+    if (new Date(dateData.dateString) < new Date()) {
+      setShowPrevious(true);
+    }
+    setSelectedDate(dateData.dateString);
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     if (user != null) {
@@ -84,17 +109,22 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     setRefreshing(false);
   };
 
+  const handleToggleOld = React.useCallback(() => {
+    optionsBottomSheetRef.current?.dismiss();
+    setShowPrevious((prev) => !prev);
+  }, []);
+
   return (
     <View style={styles.container}>
       <CalendarProvider
         date={selectedDate}
-        showTodayButton
+        showTodayButton={true}
         theme={{ todayButtonTextColor: primary }}
       >
         <ExpandableCalendar
           firstDay={1}
           markedDates={markedDates}
-          onDayPress={(dateData) => setSelectedDate(dateData.dateString)}
+          onDayPress={handleDatePress}
           theme={{
             dotColor: primary,
             todayDotColor: primary,
@@ -107,10 +137,10 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
         />
         {agendaItems.length > 0 ? (
           <AgendaList
-            sectionStyle={styles.agendaSectionStyle}
+            renderSectionHeader={() => null}
             sections={agendaItems}
             renderItem={renderItem}
-            scrollToNextEvent
+            scrollToNextEvent={true}
             refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
           />
         ) : (
@@ -134,6 +164,24 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
           onPress={() => navigation.navigate("AddOrEditCalendarItem", {})}
         />
       ) : null}
+
+      <BottomSheetModal
+        enablePanDownToClose
+        ref={optionsBottomSheetRef}
+        snapPoints={optionsSnapPoints}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
+      >
+        <ListItem onPress={handleToggleOld}>
+          <ListItem.Content style={styles.bottomSheetOption}>
+            <Icon name={showPrevious ? "eye-with-line" : "eye"} type="entypo" />
+            <ListItem.Title>
+              {showPrevious ? "Hide older items" : "Show older items"}
+            </ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -149,9 +197,6 @@ const makeStyles = (colors: Colors) =>
       bottom: 20,
       right: 20,
     },
-    agendaSectionStyle: {
-      paddingBottom: 0,
-    },
     emptyView: {
       alignItems: "center",
       rowGap: 20,
@@ -166,6 +211,13 @@ const makeStyles = (colors: Colors) =>
       height: 250,
       width: 250,
       opacity: 0.6,
-      marginTop: -30, // there is a lot of extra space on the image
+      marginTop: -30,
+    },
+    bottomSheetOption: {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      alignItems: "center",
+      columnGap: 10,
     },
   });
