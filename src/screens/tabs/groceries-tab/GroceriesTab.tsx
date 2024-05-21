@@ -16,7 +16,6 @@ export type GroceriesTabStackParamList = {
   CalendarGroceries: undefined;
   RecipeGroceries: undefined;
   AddGroceryItem: undefined;
-  FindRecipes: undefined;
 };
 
 const Stack = createStackNavigator<GroceriesTabStackParamList>();

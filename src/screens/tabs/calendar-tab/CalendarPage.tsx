@@ -1,7 +1,7 @@
 import { StackScreenProps } from "@react-navigation/stack";
-import { Button, Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
+import { Button, Colors, FAB, Icon, useTheme } from "@rneui/themed";
 import React from "react";
-import { RefreshControl, StyleSheet, View } from "react-native";
+import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
 import { AgendaList, CalendarProvider, ExpandableCalendar } from "react-native-calendars";
 import { DateData, MarkedDates } from "react-native-calendars/src/types";
 import { CalendarTabStackParamList } from "./CalendarTab";
@@ -11,13 +11,14 @@ import {
   CalendarItem,
   CalendarItemData,
   fetchCalendarItems,
-  selectAllCalendarItems,
+  selectCalendarState,
 } from "../../../redux/calendarSlice";
 import { MemoizedCalendarDayItem } from "./CalendarDayItem";
 import { Recipe } from "../../../redux/recipesSlice";
 import { getLocalDateString } from "../../../common/date";
 import { ZeroState } from "../../../common/ZeroState";
-import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BottomSheetList } from "../../../common/BottomSheetList";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarPage">;
 
@@ -27,7 +28,8 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
   const { primary, secondary } = theme.colors;
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
-  const calendarItems = useAppSelector(selectAllCalendarItems);
+  const calendarState = useAppSelector(selectCalendarState);
+  const calendarItems = calendarState.calendarItems;
   const relevantCalendarItems = calendarItems.filter((item) => new Date(item.date) > new Date());
 
   const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));
@@ -114,6 +116,14 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     setShowPrevious((prev) => !prev);
   }, []);
 
+  if (calendarState.loading && calendarItems.length === 0) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" style={{ flex: 1 }} color={theme.colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <CalendarProvider
@@ -165,23 +175,17 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
         />
       ) : null}
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={optionsBottomSheetRef}
         snapPoints={optionsSnapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleToggleOld}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name={showPrevious ? "eye-with-line" : "eye"} type="entypo" />
-            <ListItem.Title>
-              {showPrevious ? "Hide older items" : "Show older items"}
-            </ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: showPrevious ? "eye-with-line" : "eye", type: "entypo" },
+            title: showPrevious ? "Hide older items" : "Show older items",
+            onPress: handleToggleOld,
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -212,12 +216,5 @@ const makeStyles = (colors: Colors) =>
       width: 250,
       opacity: 0.6,
       marginTop: -30,
-    },
-    bottomSheetOption: {
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "flex-start",
-      alignItems: "center",
-      columnGap: 10,
     },
   });

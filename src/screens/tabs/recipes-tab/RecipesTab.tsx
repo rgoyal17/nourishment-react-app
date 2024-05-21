@@ -11,7 +11,7 @@ import { FindRecipes } from "./FindRecipes";
 
 export type RecipesTabStackParamList = {
   AddOrEditRecipe: { recipe?: Recipe; source: "scratch" | "import" | "edit" };
-  RecipeItem: { recipe: Recipe };
+  RecipeItem: { recipeId: string };
   Recipes: undefined;
   FindRecipes: undefined;
 };

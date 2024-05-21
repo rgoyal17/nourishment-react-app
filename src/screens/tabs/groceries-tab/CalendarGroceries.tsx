@@ -1,5 +1,5 @@
 import { Colors } from "@rneui/base";
-import { Button, Icon, ListItem, useTheme } from "@rneui/themed";
+import { Button, Icon, useTheme } from "@rneui/themed";
 import React from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { getDatesInRange, getMonthDateString } from "../../../common/date";
@@ -19,9 +19,10 @@ import {
 } from "../../../redux/groceriesSlice";
 import { compact } from "lodash";
 import * as Sentry from "@sentry/react-native";
-import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { GroceriesList } from "./GroceriesList";
 import { combineIngredients } from "../../../common/combineIngredients";
+import { BottomSheetList } from "../../../common/BottomSheetList";
 
 type CalendarGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "CalendarGroceries">;
 
@@ -196,27 +197,22 @@ export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
         />
       ) : null}
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={bottomSheetRef}
         snapPoints={snapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleSelectAll}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="check" type="entypo" />
-            <ListItem.Title>Select all</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleDeselectAll}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="cross" type="entypo" />
-            <ListItem.Title>Deselect all</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: "check", type: "entypo" },
+            title: "Select all",
+            onPress: handleSelectAll,
+          },
+          {
+            iconProps: { name: "cross", type: "entypo" },
+            title: "Deselect all",
+            onPress: handleDeselectAll,
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -257,12 +253,5 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 10,
       marginBottom: 10,
       width: 300,
-    },
-    bottomSheetOption: {
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "flex-start",
-      alignItems: "center",
-      columnGap: 10,
     },
   });

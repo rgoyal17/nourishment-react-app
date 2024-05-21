@@ -1,10 +1,10 @@
 import { Colors, FAB } from "@rneui/base";
-import { Text, Image, useTheme, Icon, ListItem, Divider, Button } from "@rneui/themed";
+import { Text, Image, useTheme, Icon, Divider, Button } from "@rneui/themed";
 import React from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
 import { RecipesTabStackParamList } from "./RecipesTab";
 import { StackScreenProps } from "@react-navigation/stack";
-import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
+import { fetchRecipes, selectRecipesState } from "../../../redux/recipesSlice";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { ActivityIndicator } from "react-native";
@@ -17,7 +17,10 @@ import {
   fetchRecipeSortOption,
   getRecipeSortOption,
   updateRecipeSortOption,
+  updateRecipeSortState,
 } from "../../../redux/recipeSortSlice";
+import { BottomSheetList } from "../../../common/BottomSheetList";
+import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
@@ -26,7 +29,8 @@ export function Recipes({ navigation }: RecipesProps) {
   const styles = makeStyles(theme.colors);
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
-  const recipes = useAppSelector(selectAllRecipes);
+  const recipesState = useAppSelector(selectRecipesState);
+  const recipes = recipesState.recipes;
   const sortOption = useAppSelector(getRecipeSortOption);
 
   const [refreshing, setRefreshing] = React.useState(false);
@@ -89,6 +93,17 @@ export function Recipes({ navigation }: RecipesProps) {
     }
   }, [dispatch, user]);
 
+  React.useEffect(() => {
+    if (user?.uid != null) {
+      const db = getFirestore();
+      const unsub = onSnapshot(doc(db, `users/${user.uid}`), (doc) => {
+        const sortOption = doc.data()?.recipeSortOption as SortOption | undefined;
+        dispatch(updateRecipeSortState(sortOption ?? SortOption.Name));
+      });
+      return () => unsub();
+    }
+  }, [dispatch, user?.uid]);
+
   const handleUpdateSortOption = React.useCallback(
     async (option: SortOption) => {
       if (user?.uid == null) {
@@ -96,7 +111,6 @@ export function Recipes({ navigation }: RecipesProps) {
         return;
       }
       await dispatch(updateRecipeSortOption({ userId: user.uid, sortOption: option }));
-      await dispatch(fetchRecipeSortOption(user.uid));
     },
     [dispatch, user?.uid],
   );
@@ -105,6 +119,7 @@ export function Recipes({ navigation }: RecipesProps) {
     setRefreshing(true);
     if (user != null) {
       await dispatch(fetchRecipes(user.uid));
+      await dispatch(fetchRecipeSortOption(user.uid));
     }
     setRefreshing(false);
   };
@@ -140,6 +155,7 @@ export function Recipes({ navigation }: RecipesProps) {
           cookTime: "",
           prepTime: "",
           isoDate: new Date().toISOString(),
+          isParsing: false,
           websiteUrl: recipeUrl,
         },
         source: "import",
@@ -155,6 +171,14 @@ export function Recipes({ navigation }: RecipesProps) {
     optionsBottomSheetRef.current?.dismiss();
     navigation.navigate("FindRecipes");
   }, [navigation]);
+
+  if (recipesState.loading && recipes.length === 0) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" style={{ flex: 1 }} color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -172,7 +196,7 @@ export function Recipes({ navigation }: RecipesProps) {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.recipeItem}
-              onPress={() => navigation.navigate("RecipeItem", { recipe: item })}
+              onPress={() => navigation.navigate("RecipeItem", { recipeId: item.id })}
             >
               <View style={styles.recipe}>
                 {item.image === "" ? (
@@ -223,27 +247,22 @@ export function Recipes({ navigation }: RecipesProps) {
         />
       ) : null}
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={addBottomSheetRef}
         snapPoints={addSnapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleCreateFromScratch}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="create-outline" type="ionicon" />
-            <ListItem.Title>Create from Scratch</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleImportFromWeb}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="download" type="feather" />
-            <ListItem.Title>Import from web</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: "create-outline", type: "ionicon" },
+            title: "Create from Scratch",
+            onPress: handleCreateFromScratch,
+          },
+          {
+            iconProps: { name: "download", type: "feather" },
+            title: "Import from web",
+            onPress: handleImportFromWeb,
+          },
+        ]}
+      />
 
       <BottomSheetModal
         enablePanDownToClose
@@ -273,21 +292,17 @@ export function Recipes({ navigation }: RecipesProps) {
         </View>
       </BottomSheetModal>
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={optionsBottomSheetRef}
         snapPoints={optionsSnapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleFindRecipes}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="search" />
-            <ListItem.Title>Find recipes from ingredients</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: "search" },
+            title: "Find recipes from ingredients",
+            onPress: handleFindRecipes,
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -334,13 +349,6 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 20,
       height: "100%",
       width: "100%",
-    },
-    bottomSheetOption: {
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "flex-start",
-      alignItems: "center",
-      columnGap: 10,
     },
     importBottomSheet: {
       backgroundColor: colors.white,

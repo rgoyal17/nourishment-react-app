@@ -27,6 +27,11 @@ export interface CalendarItem {
   recipeData: CalendarItemData[];
 }
 
+export interface CalendarState {
+  loading: boolean;
+  calendarItems: CalendarItem[];
+}
+
 export const fetchCalendarItems = createAsyncThunk(
   "calendar/fetchItems",
   async (userId: string) => {
@@ -125,21 +130,30 @@ export const deleteCalendarItem = createAsyncThunk(
   },
 );
 
-const initialState: CalendarItem[] = [];
+const initialState: CalendarState = { loading: false, calendarItems: [] };
 
 const calendarSlice = createSlice({
   name: "calendarItems",
   initialState,
   reducers: {},
   extraReducers(builder) {
-    builder.addCase(fetchCalendarItems.fulfilled, (_, action) => action.payload);
+    builder.addCase(fetchCalendarItems.pending, ({ calendarItems }) => ({
+      loading: true,
+      calendarItems,
+    }));
+    builder.addCase(fetchCalendarItems.fulfilled, (_, { payload }) => ({
+      loading: false,
+      calendarItems: payload,
+    }));
   },
 });
 
-export const selectAllCalendarItems = (state: RootState) => state.calendarItems;
+export const selectCalendarState = (state: RootState) => state.calendarState;
+
+export const selectAllCalendarItems = (state: RootState) => state.calendarState.calendarItems;
 
 export const selectCalendarItemsByDate = (date: string) => (state: RootState) =>
-  state.calendarItems.find((item) => item.date === date);
+  state.calendarState.calendarItems.find((item) => item.date === date);
 
 export const selectCalendarItemsByDates = createSelector(
   [selectAllCalendarItems, (_state: RootState, dates: string[]) => dates],

@@ -1,4 +1,4 @@
-import { StackScreenProps } from "@react-navigation/stack";
+import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack";
 import React from "react";
 import {
   ActivityIndicator,
@@ -17,25 +17,51 @@ import Animated, {
   useScrollViewOffset,
 } from "react-native-reanimated";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { Colors, useTheme, Button, Icon, ListItem, CheckBox, Tooltip } from "@rneui/themed";
+import { Colors, useTheme, Button, Icon, CheckBox, Tooltip } from "@rneui/themed";
 import { IngredientsAndInstructions } from "./IngredientsAndInstructions";
-import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { useAppDispatch } from "../../../redux/hooks";
-import { Recipe, deleteRecipe, fetchRecipes } from "../../../redux/recipesSlice";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
+import {
+  Recipe,
+  deleteRecipe,
+  fetchRecipes,
+  selectRecipeById,
+  updateRecipe,
+} from "../../../redux/recipesSlice";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { fetchCalendarItems } from "../../../redux/calendarSlice";
+import { BottomSheetList } from "../../../common/BottomSheetList";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
-
-const { width } = Dimensions.get("window");
-const IMG_HEIGHT = 400;
 
 export function RecipeItem({ navigation, route }: RecipeItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
+  const recipe = useAppSelector(selectRecipeById(route.params.recipeId));
+
+  return recipe == null ? (
+    <View style={styles.errorContainer}>
+      <Icon name="error" color={theme.colors.error} />
+      <Text style={{ fontSize: 18 }}>Failed to load recipe</Text>
+    </View>
+  ) : (
+    <LoadedRecipeItem navigation={navigation} recipe={recipe} />
+  );
+}
+
+const { width } = Dimensions.get("window");
+const IMG_HEIGHT = 400;
+
+interface LoadedRecipeItemProps {
+  navigation: StackNavigationProp<RecipesTabStackParamList, "RecipeItem", undefined>;
+  recipe: Recipe;
+}
+
+function LoadedRecipeItem({ navigation, recipe }: LoadedRecipeItemProps) {
+  const { theme } = useTheme();
+  const styles = makeStyles(theme.colors);
   const db = getFirestore();
-  const [recipe, setRecipe] = React.useState(route.params.recipe);
   const dispatch = useAppDispatch();
   const { user } = useAuthentication();
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
@@ -54,14 +80,14 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
       const unsub = onSnapshot(doc(db, `users/${user.uid}/recipes/${recipe.id}`), (doc) => {
         const updatedRecipe = doc.data() as Recipe | undefined;
         if (updatedRecipe != null) {
-          setRecipe(updatedRecipe);
           setParsedIngredients(updatedRecipe.ingredientsParsed);
           setIsFormattedChecked(updatedRecipe.ingredientsParsed.length > 0);
+          dispatch(updateRecipe(updatedRecipe));
         }
       });
       return () => unsub();
     }
-  }, [db, recipe.id, user?.uid]);
+  }, [db, dispatch, recipe.id, user?.uid]);
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -121,9 +147,9 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
     try {
       setIsDeletingRecipe(true);
       await dispatch(deleteRecipe({ userId: user.uid, recipeId: recipe.id }));
+      navigation.navigate("Recipes");
       await dispatch(fetchRecipes(user.uid));
       await dispatch(fetchCalendarItems(user.uid));
-      navigation.navigate("Recipes");
       bottomSheetRef.current?.dismiss();
     } catch (e) {
       Alert.alert("Failed to delete recipe");
@@ -236,7 +262,12 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
               }
             </Text>
           ) : null}
-          {parsedIngredients.length > 0 ? (
+          {recipe.isParsing ? (
+            <View style={styles.parsing}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text>Parsing ingredients in the background…</Text>
+            </View>
+          ) : (
             <View style={styles.checkbox}>
               <CheckBox
                 title="View formatted ingredients"
@@ -256,11 +287,6 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
                 <Icon color={theme.colors.primary} name="help" />
               </Tooltip>
             </View>
-          ) : (
-            <View style={styles.parsing}>
-              <ActivityIndicator color={theme.colors.primary} />
-              <Text>Parsing ingredients in the background…</Text>
-            </View>
           )}
         </View>
         <IngredientsAndInstructions
@@ -271,33 +297,36 @@ export function RecipeItem({ navigation, route }: RecipeItemProps) {
         />
       </Animated.ScrollView>
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={bottomSheetRef}
         snapPoints={["20%"]}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleEditRecipe}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="edit" />
-            <ListItem.Title>Edit</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleDeleteClick}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="delete" />
-            <ListItem.Title>{isDeletingRecipe ? "Deleting..." : "Delete"}</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: "edit" },
+            title: "Edit",
+            onPress: handleEditRecipe,
+          },
+          {
+            iconProps: { name: "delete" },
+            title: isDeletingRecipe ? "Deleting..." : "Delete",
+            onPress: handleDeleteClick,
+          },
+        ]}
+      />
     </View>
   );
 }
 
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
+    errorContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      flex: 1,
+      backgroundColor: colors.secondary,
+      flexDirection: "row",
+      columnGap: 10,
+    },
     container: {
       flex: 1,
       backgroundColor: colors.secondary,
@@ -312,13 +341,6 @@ const makeStyles = (colors: Colors) =>
     header: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: colors.primary,
-    },
-    bottomSheetOption: {
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "flex-start",
-      alignItems: "center",
-      columnGap: 10,
     },
     activityIndicator: {
       ...StyleSheet.absoluteFillObject,

@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import { ref, getDownloadURL, getStorage, uploadBytesResumable } from "firebase/storage";
 import {
@@ -35,10 +35,16 @@ export interface Recipe {
   cookTime: string;
   prepTime: string;
   isoDate: string;
+  isParsing: boolean;
   websiteUrl?: string;
 }
 
-const initialState: Recipe[] = [];
+export interface RecipesState {
+  loading: boolean;
+  recipes: Recipe[];
+}
+
+const initialState: RecipesState = { loading: false, recipes: [] };
 
 export const fetchRecipes = createAsyncThunk("recipes/fetchRecipes", async (userId: string) => {
   const db = getFirestore();
@@ -67,9 +73,9 @@ export const addNewRecipe = createAsyncThunk(
     const db = getFirestore();
     const recipeDoc = doc(db, `users/${userId}/recipes/${id}`);
     const updatedRecipe = { ...recipe, id, image, isoDate: new Date().toISOString() };
-    await setDoc(recipeDoc, { ...updatedRecipe });
+    await setDoc(recipeDoc, { ...updatedRecipe, isParsing: true });
 
-    return recipe;
+    return updatedRecipe;
   },
 );
 
@@ -138,9 +144,22 @@ export const editRecipe = createAsyncThunk(
 const recipesSlice = createSlice({
   name: "recipes",
   initialState,
-  reducers: {},
+  reducers: {
+    updateRecipe(state: RecipesState, { payload }: PayloadAction<Recipe>) {
+      state.recipes = [...state.recipes].map((recipe) =>
+        recipe.id === payload.id ? payload : recipe,
+      );
+    },
+  },
   extraReducers(builder) {
-    builder.addCase(fetchRecipes.fulfilled, (_, action) => action.payload);
+    builder.addCase(fetchRecipes.pending, ({ recipes }) => ({
+      loading: true,
+      recipes,
+    }));
+    builder.addCase(fetchRecipes.fulfilled, (_, { payload }) => ({
+      loading: false,
+      recipes: payload,
+    }));
   },
 });
 
@@ -155,10 +174,14 @@ const uploadToFirebase = async (imageUri: string, storagePath: string): Promise<
   return downloadUrl;
 };
 
-export const selectAllRecipes = (state: RootState) => state.recipes;
+export const { updateRecipe } = recipesSlice.actions;
+
+export const selectRecipesState = (state: RootState) => state.recipesState;
+
+export const selectAllRecipes = (state: RootState) => state.recipesState.recipes;
 
 export const selectRecipeById = (id: string) => (state: RootState) =>
-  state.recipes.find((recipe) => recipe.id === id);
+  state.recipesState.recipes.find((recipe) => recipe.id === id);
 
 export const selectRecipesByIds = createSelector(
   [selectAllRecipes, (_state: RootState, recipeIds: string[]) => recipeIds],

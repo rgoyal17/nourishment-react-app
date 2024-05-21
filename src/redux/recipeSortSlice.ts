@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
 import { RootState } from "./store";
 
@@ -11,7 +11,7 @@ export enum SortOption {
 export const fetchRecipeSortOption = createAsyncThunk("sortOption/get", async (userId: string) => {
   const db = getFirestore();
   const userDoc = getDoc(doc(db, `users/${userId}`));
-  const sortOption = (await userDoc).data()?.recipeSortOption as SortOption;
+  const sortOption = (await userDoc).data()?.recipeSortOption as SortOption | undefined;
   return sortOption ?? SortOption.Name;
 });
 
@@ -33,11 +33,17 @@ export const updateRecipeSortOption = createAsyncThunk(
 const recipeSortOptionSlice = createSlice({
   name: "recipesSortOption",
   initialState: SortOption.Name,
-  reducers: {},
+  reducers: {
+    updateRecipeSortState(_state: SortOption, { payload }: PayloadAction<SortOption>) {
+      return payload;
+    },
+  },
   extraReducers(builder) {
     builder.addCase(fetchRecipeSortOption.fulfilled, (_, action) => action.payload);
   },
 });
+
+export const { updateRecipeSortState } = recipeSortOptionSlice.actions;
 
 export const getRecipeSortOption = (state: RootState) => state.recipeSortOption;
 

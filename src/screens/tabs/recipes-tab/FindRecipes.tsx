@@ -15,9 +15,9 @@ import { MultiSelect } from "../../../common/MultiSelect";
 import { compact } from "lodash";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { StackScreenProps } from "@react-navigation/stack";
-import { GroceriesTabStackParamList } from "../groceries-tab/GroceriesTab";
+import { RecipesTabStackParamList } from "./RecipesTab";
 
-type FindRecipesProps = StackScreenProps<GroceriesTabStackParamList, "FindRecipes">;
+type FindRecipesProps = StackScreenProps<RecipesTabStackParamList, "FindRecipes">;
 
 export function FindRecipes({ navigation }: FindRecipesProps) {
   const { theme } = useTheme();
@@ -70,9 +70,7 @@ export function FindRecipes({ navigation }: FindRecipesProps) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.recipeItem}
-            onPress={() =>
-              navigation.navigate("RecipesTab", { screen: "RecipeItem", params: { recipe: item } })
-            }
+            onPress={() => navigation.navigate("RecipeItem", { recipeId: item.id })}
           >
             <View style={styles.recipe}>
               {item.image === "" ? (

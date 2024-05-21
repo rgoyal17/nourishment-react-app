@@ -6,9 +6,9 @@ import { groceriesReducer } from "./groceriesSlice";
 
 export const store = configureStore({
   reducer: {
-    recipes: recipesReducer,
+    recipesState: recipesReducer,
     recipeSortOption: recipeSortOptionReducer,
-    calendarItems: calendarItemsReducer,
+    calendarState: calendarItemsReducer,
     groceriesState: groceriesReducer,
   },
 });

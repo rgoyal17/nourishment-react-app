@@ -2,7 +2,7 @@ import React from "react";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import { View, StyleSheet } from "react-native";
-import { Button, Colors, FAB, Icon, ListItem, useTheme } from "@rneui/themed";
+import { Button, Colors, FAB, Icon, useTheme } from "@rneui/themed";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
@@ -13,9 +13,10 @@ import {
   updateGroceryItems,
 } from "../../../redux/groceriesSlice";
 import { ZeroState } from "../../../common/ZeroState";
-import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { GroceriesList } from "./GroceriesList";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
+import { BottomSheetList } from "../../../common/BottomSheetList";
 
 type GroceriesProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
 
@@ -25,7 +26,7 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
-  const [groceries, setGroceries] = React.useState(groceriesState.groceryItems);
+  const groceries = groceriesState.groceryItems;
 
   const addBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const addSnapPoints = React.useMemo(() => ["25%"], []);
@@ -44,15 +45,10 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
   }, [dispatch, user]);
 
   React.useEffect(() => {
-    setGroceries(groceriesState.groceryItems);
-  }, [groceriesState.groceryItems]);
-
-  React.useEffect(() => {
     if (user?.uid != null) {
       const db = getFirestore();
       const unsub = onSnapshot(doc(db, `users/${user.uid}`), (doc) => {
         const latestGroceries = (doc.data()?.groceries as GroceryItem[]) ?? [];
-        setGroceries(latestGroceries);
         dispatch(updateGroceryItems(latestGroceries));
       });
       return () => unsub();
@@ -187,69 +183,54 @@ export function GroceriesPage({ navigation }: GroceriesProps) {
         />
       ) : null}
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={addBottomSheetRef}
         snapPoints={addSnapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleAddItem}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="add" type="ionicon" />
-            <ListItem.Title>Add new items</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleImportFromRecipes}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="menu-book" />
-            <ListItem.Title>Ingredients of recipes</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleImportFromCalendar}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="calendar" type="font-awesome" />
-            <ListItem.Title>Meal prep calendar</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: "add", type: "ionicon" },
+            title: "Add new items",
+            onPress: handleAddItem,
+          },
+          {
+            iconProps: { name: "menu-book" },
+            title: "Ingredients of recipes",
+            onPress: handleImportFromRecipes,
+          },
+          {
+            iconProps: { name: "calendar", type: "font-awesome" },
+            title: "Meal prep calendar",
+            onPress: handleImportFromCalendar,
+          },
+        ]}
+      />
 
-      <BottomSheetModal
-        enablePanDownToClose
+      <BottomSheetList
         ref={optionsBottomSheetRef}
         snapPoints={optionsSnapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ListItem onPress={handleSelectAll}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="check" type="entypo" />
-            <ListItem.Title>{isSelectingAll ? "Selecting..." : "Select all"}</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleDeselectAll}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="cross" type="entypo" />
-            <ListItem.Title>{isDeselectingAll ? "Deselecting..." : "Deselect all"}</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleDeleteAll}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="delete" />
-            <ListItem.Title>{isDeletingAll ? "Deleting..." : "Delete all"}</ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-        <ListItem onPress={handleDeleteCheckedItems}>
-          <ListItem.Content style={styles.bottomSheetOption}>
-            <Icon name="remove-circle" />
-            <ListItem.Title>
-              {isDeletingChecked ? "Deleting..." : "Delete checked items"}
-            </ListItem.Title>
-          </ListItem.Content>
-        </ListItem>
-      </BottomSheetModal>
+        modalItems={[
+          {
+            iconProps: { name: "check", type: "entypo" },
+            title: isSelectingAll ? "Selecting..." : "Select all",
+            onPress: handleSelectAll,
+          },
+          {
+            iconProps: { name: "cross", type: "entypo" },
+            title: isDeselectingAll ? "Deselecting..." : "Deselect all",
+            onPress: handleDeselectAll,
+          },
+          {
+            iconProps: { name: "delete" },
+            title: isDeletingAll ? "Deleting..." : "Delete all",
+            onPress: handleDeleteAll,
+          },
+          {
+            iconProps: { name: "remove-circle" },
+            title: isDeletingChecked ? "Deleting..." : "Delete checked items",
+            onPress: handleDeleteCheckedItems,
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -270,12 +251,5 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.6,
       height: 170,
       width: 170,
-    },
-    bottomSheetOption: {
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "flex-start",
-      alignItems: "center",
-      columnGap: 10,
     },
   });

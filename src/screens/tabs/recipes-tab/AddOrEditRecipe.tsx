@@ -22,6 +22,7 @@ export const INITIAL_RECIPE: Recipe = {
   instructions: [],
   cookTime: "",
   prepTime: "",
+  isParsing: false,
   isoDate: new Date().toISOString(),
 };
 
@@ -96,22 +97,28 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     }
     try {
       setIsAddingRecipe(true);
+      const didIngredientsChange = recipeFromParent?.ingredientsRaw !== recipe.ingredientsRaw;
       const updatedRecipe: Recipe = {
         ...recipe,
-        ingredientsParsed:
-          recipeFromParent?.ingredientsRaw !== recipe.ingredientsRaw
-            ? []
-            : recipe.ingredientsParsed,
+        ingredientsParsed: didIngredientsChange ? [] : recipe.ingredientsParsed,
+        isParsing: didIngredientsChange,
         ingredientsRaw: filteredIngredients,
         instructions: filteredInstructions,
       };
+      let response;
       if (source === "edit") {
-        await dispatch(editRecipe({ userId: user.uid, recipe: updatedRecipe }));
+        response = await dispatch(editRecipe({ userId: user.uid, recipe: updatedRecipe }));
       } else {
-        await dispatch(addNewRecipe({ userId: user.uid, recipe: updatedRecipe }));
+        response = await dispatch(addNewRecipe({ userId: user.uid, recipe: updatedRecipe }));
       }
       await dispatch(fetchRecipes(user.uid));
-      navigation.navigate("Recipes");
+      const responseRecipe = response.payload as Recipe | undefined;
+      if (responseRecipe == null) {
+        navigation.navigate("Recipes");
+      } else {
+        navigation.pop();
+        navigation.navigate("RecipeItem", { recipeId: responseRecipe.id });
+      }
     } catch (e) {
       Alert.alert("Failed to add recipe");
       Sentry.captureException(e);
@@ -149,10 +156,17 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
       const res = await openai.images.generate({
         prompt: recipe.title,
         response_format: "url",
-        size: "512x512",
+        size: "1024x1024",
+        model: "dall-e-3",
       });
-      setRecipe({ image: res.data.at(0)?.url ?? "" });
+      const image = res.data.at(0)?.url;
+      if (image == null) {
+        throw new Error("Failed to generate image");
+      }
+      setRecipe({ image });
     } catch (e) {
+      Sentry.captureException(e);
+      Alert.alert("Failed to generate image");
       setRecipe({ image: "" });
     } finally {
       setIsLoadingImage(false);
