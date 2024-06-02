@@ -1,9 +1,9 @@
 import { StackScreenProps } from "@react-navigation/stack";
-import { Button, Colors, FAB, Icon, useTheme } from "@rneui/themed";
+import { Colors, FAB, useTheme } from "@rneui/themed";
 import React from "react";
-import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
+import { RefreshControl, StyleSheet, View } from "react-native";
 import { AgendaList, CalendarProvider, ExpandableCalendar } from "react-native-calendars";
-import { DateData, MarkedDates } from "react-native-calendars/src/types";
+import { MarkedDates } from "react-native-calendars/src/types";
 import { CalendarTabStackParamList } from "./CalendarTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
@@ -11,51 +11,31 @@ import {
   CalendarItem,
   CalendarItemData,
   fetchCalendarItems,
-  selectCalendarState,
+  selectAllCalendarItems,
 } from "../../../redux/calendarSlice";
 import { MemoizedCalendarDayItem } from "./CalendarDayItem";
 import { Recipe } from "../../../redux/recipesSlice";
 import { getLocalDateString } from "../../../common/date";
 import { ZeroState } from "../../../common/ZeroState";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { BottomSheetList } from "../../../common/BottomSheetList";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarPage">;
 
 export function CalendarPage({ navigation }: CalendarItemsProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { primary, secondary } = theme.colors;
+  const { primary } = theme.colors;
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
-  const calendarState = useAppSelector(selectCalendarState);
-  const calendarItems = calendarState.calendarItems;
-  const relevantCalendarItems = calendarItems.filter((item) => new Date(item.date) > new Date());
 
   const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));
   const [refreshing, setRefreshing] = React.useState(false);
-  const [showPrevious, setShowPrevious] = React.useState(relevantCalendarItems.length === 0);
 
-  const optionsBottomSheetRef = React.useRef<BottomSheetModal>(null);
-  const optionsSnapPoints = React.useMemo(() => ["12%"], []);
+  const calendarItems = useAppSelector(selectAllCalendarItems);
 
-  React.useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Button
-          icon={
-            <Icon color={secondary} size={30} name="dots-horizontal" type="material-community" />
-          }
-          onPress={() => optionsBottomSheetRef.current?.present()}
-        />
-      ),
-    });
-  }, [navigation, secondary, theme.colors.secondary]);
-
-  const agendaItems = React.useMemo(() => {
-    const items = showPrevious ? calendarItems : relevantCalendarItems;
-    return items.map((item) => ({ title: item.date, data: [item] }));
-  }, [calendarItems, relevantCalendarItems, showPrevious]);
+  const agendaItems = React.useMemo(
+    () => calendarItems.map((item) => ({ title: item.date, data: [item] })),
+    [calendarItems],
+  );
 
   const markedDates = React.useMemo(() => {
     const dates: MarkedDates = {};
@@ -99,13 +79,6 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     }
   }, [dispatch, user]);
 
-  const handleDatePress = React.useCallback((dateData: DateData) => {
-    if (new Date(dateData.dateString) < new Date()) {
-      setShowPrevious(true);
-    }
-    setSelectedDate(dateData.dateString);
-  }, []);
-
   const onRefresh = async () => {
     setRefreshing(true);
     if (user != null) {
@@ -114,30 +87,17 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     setRefreshing(false);
   };
 
-  const handleToggleOld = React.useCallback(() => {
-    optionsBottomSheetRef.current?.dismiss();
-    setShowPrevious((prev) => !prev);
-  }, []);
-
-  if (calendarState.loading && calendarItems.length === 0) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" style={{ flex: 1 }} color={theme.colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <CalendarProvider
         date={selectedDate}
-        showTodayButton={true}
+        showTodayButton
         theme={{ todayButtonTextColor: primary }}
       >
         <ExpandableCalendar
           firstDay={1}
           markedDates={markedDates}
-          onDayPress={handleDatePress}
+          onDayPress={(dateData) => setSelectedDate(dateData.dateString)}
           theme={{
             dotColor: primary,
             todayDotColor: primary,
@@ -150,10 +110,10 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
         />
         {agendaItems.length > 0 ? (
           <AgendaList
-            renderSectionHeader={() => null}
+            sectionStyle={styles.agendaSectionStyle}
             sections={agendaItems}
             renderItem={renderItem}
-            scrollToNextEvent={true}
+            scrollToNextEvent
             refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
           />
         ) : (
@@ -180,18 +140,6 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
           }
         />
       ) : null}
-
-      <BottomSheetList
-        ref={optionsBottomSheetRef}
-        snapPoints={optionsSnapPoints}
-        modalItems={[
-          {
-            iconProps: { name: showPrevious ? "eye-with-line" : "eye", type: "entypo" },
-            title: showPrevious ? "Hide older items" : "Show older items",
-            onPress: handleToggleOld,
-          },
-        ]}
-      />
     </View>
   );
 }
@@ -207,6 +155,9 @@ const makeStyles = (colors: Colors) =>
       bottom: 20,
       right: 20,
     },
+    agendaSectionStyle: {
+      paddingBottom: 0,
+    },
     emptyView: {
       alignItems: "center",
       rowGap: 20,
@@ -221,6 +172,6 @@ const makeStyles = (colors: Colors) =>
       height: 250,
       width: 250,
       opacity: 0.6,
-      marginTop: -30,
+      marginTop: -30, // there is a lot of extra space on the image
     },
   });

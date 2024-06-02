@@ -21,7 +21,7 @@ interface CalendarDayItemProps {
 
 function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: CalendarDayItemProps) {
   const { theme } = useTheme();
-  const { primary, secondary, error, white, disabled, grey3, grey4 } = theme.colors;
+  const { primary, secondary, error } = theme.colors;
   const styles = makeStyles(theme.colors);
   const dispatch = useAppDispatch();
   const { user } = useAuthentication();
@@ -29,8 +29,6 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
   const [isDeletingIndex, setIsDeletingIndex] = React.useState(-1);
 
   const { date, recipeData } = calendarItem;
-  const dateObj = new Date(`${date}T00:00:00`);
-  const isOld = dateObj < new Date();
 
   const handleDeleteCalendarRecipeData = React.useCallback(
     (index: number, label?: string) => async () => {
@@ -68,55 +66,32 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
   );
 
   return (
-    <View style={{ ...styles.container, backgroundColor: isOld ? disabled : white }}>
-      <Text
-        style={styles.dateText}
-      >{`${dateObj.toLocaleDateString("default", { weekday: "long" })}, ${dateObj.toLocaleDateString("default", { month: "short" })} ${dateObj.getDate()}`}</Text>
+    <View style={styles.container}>
       {recipeData.map((data, index) => (
         <View key={index}>
           <View style={index === 0 ? styles.labelDivider : undefined}>
-            {data.label != null ? (
-              <Text style={{ ...styles.label, color: isOld ? grey3 : primary }}>{data.label}</Text>
-            ) : null}
+            {data.label != null ? <Text style={styles.label}>{data.label}</Text> : null}
             {data.label != null || index !== 0 ? (
-              <Divider color={isOld ? grey4 : secondary} inset width={1} insetType="middle" />
+              <Divider color={secondary} inset width={1} insetType="middle" />
             ) : null}
           </View>
           <View style={styles.actionButtons}>
             <Button
-              icon={
-                <Icon
-                  style={{ opacity: 0.8 }}
-                  color={isOld ? grey3 : primary}
-                  name="edit"
-                  size={20}
-                />
-              }
+              icon={<Icon style={{ opacity: 0.8 }} color={primary} name="edit" size={20} />}
               size="sm"
               type="clear"
               onPress={handleEditCalendarItem(index)}
             />
             <Button
-              icon={
-                <Icon
-                  style={{ opacity: 0.8 }}
-                  color={isOld ? grey3 : error}
-                  name="delete"
-                  size={20}
-                />
-              }
+              icon={<Icon style={{ opacity: 0.8 }} color={error} name="delete" size={20} />}
               loading={isDeletingIndex === index}
               size="sm"
               type="clear"
-              loadingProps={{ size: "small", color: isOld ? grey3 : error, style: { height: 20 } }}
+              loadingProps={{ size: "small", color: error, style: { height: 20 } }}
               onPress={handleDeleteClick(index, data.label)}
             />
           </View>
-          <CalendarRecipeData
-            isOld={isOld}
-            recipeIds={data.recipeIds}
-            onNavigateToRecipe={onNavigateToRecipe}
-          />
+          <CalendarRecipeData recipeIds={data.recipeIds} onNavigateToRecipe={onNavigateToRecipe} />
         </View>
       ))}
     </View>
@@ -124,17 +99,14 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
 }
 
 interface CalendarRecipeDataProps {
-  isOld: boolean;
   recipeIds: string[];
   onNavigateToRecipe: (recipe: Recipe) => void;
 }
 
-function CalendarRecipeData({ isOld, recipeIds, onNavigateToRecipe }: CalendarRecipeDataProps) {
+function CalendarRecipeData({ recipeIds, onNavigateToRecipe }: CalendarRecipeDataProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { primary, grey2, grey3 } = theme.colors;
   const recipes = useAppSelector((state) => selectRecipesByIds(state, recipeIds));
-
   return (
     <View style={styles.content}>
       {recipes.map((recipe) => (
@@ -145,18 +117,18 @@ function CalendarRecipeData({ isOld, recipeIds, onNavigateToRecipe }: CalendarRe
         >
           {recipe.image === "" ? (
             <View>
-              <Icon style={styles.noImage} name="photo" color={grey2} size={50} />
+              <Icon style={styles.noImage} name="photo" color={theme.colors.grey2} size={50} />
             </View>
           ) : (
             <Image
-              style={{ ...styles.image, opacity: isOld ? 0.3 : 1 }}
+              style={styles.image}
               source={{ uri: recipe.image }}
               PlaceholderContent={
-                <ActivityIndicator style={styles.activityIndicator} color={primary} />
+                <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
               }
             />
           )}
-          <Text style={{ flex: 1, color: isOld ? grey3 : undefined }} numberOfLines={2}>
+          <Text style={{ flex: 1 }} numberOfLines={2}>
             {recipe.title}
           </Text>
         </TouchableOpacity>
@@ -184,14 +156,6 @@ const makeStyles = (colors: Colors) =>
       bottom: 20,
       right: 20,
     },
-    dateText: {
-      textTransform: "uppercase",
-      fontWeight: "700",
-      fontSize: 12,
-      color: colors.grey3,
-      paddingTop: 20,
-      paddingLeft: 20,
-    },
     noImage: {
       height: 80,
       width: 80,
@@ -214,6 +178,7 @@ const makeStyles = (colors: Colors) =>
       paddingTop: 10,
     },
     label: {
+      color: colors.primary,
       textTransform: "uppercase",
       fontWeight: "500",
       textAlign: "center",
