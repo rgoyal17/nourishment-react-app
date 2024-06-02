@@ -1,17 +1,17 @@
 import { StackScreenProps } from "@react-navigation/stack";
 import { Colors, FAB, useTheme } from "@rneui/themed";
 import React from "react";
-import { RefreshControl, StyleSheet, View } from "react-native";
-import { AgendaList, CalendarProvider, ExpandableCalendar } from "react-native-calendars";
+import { StyleSheet, View } from "react-native";
+import { CalendarProvider, ExpandableCalendar } from "react-native-calendars";
 import { MarkedDates } from "react-native-calendars/src/types";
 import { CalendarTabStackParamList } from "./CalendarTab";
 import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
-  CalendarItem,
   CalendarItemData,
   fetchCalendarItems,
   selectAllCalendarItems,
+  selectCalendarItemsByDate,
 } from "../../../redux/calendarSlice";
 import { MemoizedCalendarDayItem } from "./CalendarDayItem";
 import { Recipe } from "../../../redux/recipesSlice";
@@ -28,14 +28,9 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
   const dispatch = useAppDispatch();
 
   const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));
-  const [refreshing, setRefreshing] = React.useState(false);
 
   const calendarItems = useAppSelector(selectAllCalendarItems);
-
-  const agendaItems = React.useMemo(
-    () => calendarItems.map((item) => ({ title: item.date, data: [item] })),
-    [calendarItems],
-  );
+  const calendarItem = useAppSelector(selectCalendarItemsByDate(selectedDate));
 
   const markedDates = React.useMemo(() => {
     const dates: MarkedDates = {};
@@ -62,30 +57,11 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
     [navigation, selectedDate],
   );
 
-  const renderItem = React.useCallback(
-    ({ item }: any) => (
-      <MemoizedCalendarDayItem
-        calendarItem={item as CalendarItem}
-        onEditRecipe={handleEditCalendarItem}
-        onNavigateToRecipe={handleNavigateToRecipe}
-      />
-    ),
-    [handleEditCalendarItem, handleNavigateToRecipe],
-  );
-
   React.useEffect(() => {
     if (user != null) {
       dispatch(fetchCalendarItems(user.uid));
     }
   }, [dispatch, user]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    if (user != null) {
-      await dispatch(fetchCalendarItems(user.uid));
-    }
-    setRefreshing(false);
-  };
 
   return (
     <View style={styles.container}>
@@ -93,11 +69,11 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
         date={selectedDate}
         showTodayButton
         theme={{ todayButtonTextColor: primary }}
+        onDateChanged={(d) => setSelectedDate(d)}
       >
         <ExpandableCalendar
           firstDay={1}
           markedDates={markedDates}
-          onDayPress={(dateData) => setSelectedDate(dateData.dateString)}
           theme={{
             dotColor: primary,
             todayDotColor: primary,
@@ -108,29 +84,29 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
             todayTextColor: primary,
           }}
         />
-        {agendaItems.length > 0 ? (
-          <AgendaList
-            sectionStyle={styles.agendaSectionStyle}
-            sections={agendaItems}
-            renderItem={renderItem}
-            scrollToNextEvent
-            refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        {calendarItem != null ? (
+          <MemoizedCalendarDayItem
+            calendarItem={calendarItem}
+            onEditRecipe={handleEditCalendarItem}
+            onNavigateToRecipe={handleNavigateToRecipe}
           />
         ) : (
-          <ZeroState
-            imgSrc={require("../../../../assets/calendar.png")}
-            imgStyle={styles.zeroStateImg}
-            title="No Recipes Found"
-            subtitle="Streamline your meals, one prep at a time"
-            actionButtonProps={{
-              title: "Add recipes to calendar",
-              onPress: () =>
-                navigation.navigate("AddOrEditCalendarItem", { initialDate: selectedDate }),
-            }}
-          />
+          <View style={{ flex: 1, backgroundColor: theme.colors.secondary }}>
+            <ZeroState
+              imgSrc={require("../../../../assets/calendar.png")}
+              imgStyle={styles.zeroStateImg}
+              title="No Recipes Found"
+              subtitle="Streamline your meals, one prep at a time"
+              actionButtonProps={{
+                title: "Add recipes to calendar",
+                onPress: () =>
+                  navigation.navigate("AddOrEditCalendarItem", { initialDate: selectedDate }),
+              }}
+            />
+          </View>
         )}
       </CalendarProvider>
-      {agendaItems.length > 0 ? (
+      {calendarItem != null ? (
         <FAB
           style={styles.fab}
           icon={{ name: "add", color: theme.colors.secondary }}
@@ -148,7 +124,7 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.secondary,
+      backgroundColor: colors.white,
     },
     fab: {
       position: "absolute",

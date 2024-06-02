@@ -1,4 +1,12 @@
-import { ActivityIndicator, View, StyleSheet, Text, Alert } from "react-native";
+import {
+  ActivityIndicator,
+  View,
+  StyleSheet,
+  Text,
+  Alert,
+  ScrollView,
+  RefreshControl,
+} from "react-native";
 import { Button, Colors, Divider, Icon, Image, useTheme } from "@rneui/themed";
 import React from "react";
 import {
@@ -27,8 +35,18 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
   const { user } = useAuthentication();
 
   const [isDeletingIndex, setIsDeletingIndex] = React.useState(-1);
+  const [refreshing, setRefreshing] = React.useState(false);
 
   const { date, recipeData } = calendarItem;
+  const dateObj = new Date(`${date}T00:00:00`);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (user != null) {
+      await dispatch(fetchCalendarItems(user.uid));
+    }
+    setRefreshing(false);
+  };
 
   const handleDeleteCalendarRecipeData = React.useCallback(
     (index: number, label?: string) => async () => {
@@ -66,7 +84,13 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
   );
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <Text
+        style={styles.dateText}
+      >{`${dateObj.toLocaleDateString("default", { weekday: "long" })}, ${dateObj.toLocaleDateString("default", { month: "short" })} ${dateObj.getDate()}`}</Text>
       {recipeData.map((data, index) => (
         <View key={index}>
           <View style={index === 0 ? styles.labelDivider : undefined}>
@@ -94,7 +118,7 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
           <CalendarRecipeData recipeIds={data.recipeIds} onNavigateToRecipe={onNavigateToRecipe} />
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -144,7 +168,6 @@ const makeStyles = (colors: Colors) =>
     container: {
       flex: 1,
       backgroundColor: colors.white,
-      borderBottomWidth: 0.2,
     },
     content: {
       padding: 20,
@@ -195,5 +218,13 @@ const makeStyles = (colors: Colors) =>
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
+    },
+    dateText: {
+      textTransform: "uppercase",
+      fontWeight: "700",
+      fontSize: 12,
+      color: colors.grey3,
+      paddingTop: 20,
+      paddingLeft: 20,
     },
   });
