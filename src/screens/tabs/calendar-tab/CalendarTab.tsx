@@ -9,7 +9,10 @@ import { CalendarItemData } from "../../../redux/calendarSlice";
 
 export type CalendarTabStackParamList = {
   RecipesTab: { screen: keyof RecipesTabStackParamList; params: any };
-  AddOrEditCalendarItem: { editItem?: { calendarItemData: CalendarItemData; date: string } };
+  AddOrEditCalendarItem: {
+    editItem?: { calendarItemData: CalendarItemData; date: string };
+    initialDate: string;
+  };
   CalendarPage: undefined;
 };
 

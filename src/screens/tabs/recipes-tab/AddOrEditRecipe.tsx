@@ -11,6 +11,7 @@ import { useAuthentication } from "../../../hooks/useAuthentication";
 import { Recipe, addNewRecipe, editRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAppDispatch } from "../../../redux/hooks";
 import * as Sentry from "@sentry/react-native";
+import { isEqual } from "lodash";
 
 export const INITIAL_RECIPE: Recipe = {
   id: "",
@@ -97,7 +98,10 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     }
     try {
       setIsAddingRecipe(true);
-      const didIngredientsChange = recipeFromParent?.ingredientsRaw !== recipe.ingredientsRaw;
+      const didIngredientsChange = !isEqual(
+        recipeFromParent?.ingredientsRaw,
+        recipe.ingredientsRaw,
+      );
       const updatedRecipe: Recipe = {
         ...recipe,
         ingredientsParsed: didIngredientsChange ? [] : recipe.ingredientsParsed,

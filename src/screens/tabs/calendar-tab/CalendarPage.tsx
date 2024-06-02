@@ -69,14 +69,17 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
 
   const handleNavigateToRecipe = React.useCallback(
     (recipe: Recipe) =>
-      navigation.navigate("RecipesTab", { screen: "RecipeItem", params: { recipe } }),
+      navigation.navigate("RecipesTab", { screen: "RecipeItem", params: { recipeId: recipe.id } }),
     [navigation],
   );
 
   const handleEditCalendarItem = React.useCallback(
     (calendarItemData: CalendarItemData, date: string) =>
-      navigation.navigate("AddOrEditCalendarItem", { editItem: { calendarItemData, date } }),
-    [navigation],
+      navigation.navigate("AddOrEditCalendarItem", {
+        editItem: { calendarItemData, date },
+        initialDate: selectedDate,
+      }),
+    [navigation, selectedDate],
   );
 
   const renderItem = React.useCallback(
@@ -161,7 +164,8 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
             subtitle="Streamline your meals, one prep at a time"
             actionButtonProps={{
               title: "Add recipes to calendar",
-              onPress: () => navigation.navigate("AddOrEditCalendarItem", {}),
+              onPress: () =>
+                navigation.navigate("AddOrEditCalendarItem", { initialDate: selectedDate }),
             }}
           />
         )}
@@ -171,7 +175,9 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
           style={styles.fab}
           icon={{ name: "add", color: theme.colors.secondary }}
           color={theme.colors.primary}
-          onPress={() => navigation.navigate("AddOrEditCalendarItem", {})}
+          onPress={() =>
+            navigation.navigate("AddOrEditCalendarItem", { initialDate: selectedDate })
+          }
         />
       ) : null}
 

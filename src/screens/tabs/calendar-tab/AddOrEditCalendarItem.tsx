@@ -38,7 +38,7 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
   const recipeIds = editItem?.calendarItemData.recipeIds ?? [];
   const editItemRecipes = useAppSelector((state) => selectRecipesByIds(state, recipeIds));
 
-  const [date, setDate] = React.useState(new Date());
+  const [date, setDate] = React.useState(new Date(`${route.params.initialDate}T00:00:00`));
   const [label, setLabel] = React.useState<string | undefined>(editItem?.calendarItemData.label);
   const [selectedRecipes, setSelectedRecipes] = React.useState<Recipe[]>(editItemRecipes);
   const [isAddingCalendarItem, setIsAddingCalendarItem] = React.useState(false);

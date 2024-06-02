@@ -117,7 +117,11 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={{ padding: 15 }} contentContainerStyle={{ rowGap: 10, paddingBottom: 40 }}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        style={{ padding: 15 }}
+        contentContainerStyle={{ rowGap: 10, paddingBottom: 40 }}
+      >
         {groceryItems.map((item, index) => (
           <View style={{ flexDirection: "row", alignItems: "center", columnGap: 5 }} key={index}>
             <Text style={{ flex: 1 }}>{item.item}</Text>
@@ -132,8 +136,9 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
         ))}
         {!isAdding ? (
           <Button
-            buttonStyle={{ borderRadius: 10 }}
-            title={groceryItems.length === 0 ? "Add an item" : "Add more items"}
+            icon={<Icon name="add-circle" color={secondary} />}
+            buttonStyle={styles.addButton}
+            title="New item"
             onPress={() => setIsAdding(true)}
           />
         ) : (
@@ -302,5 +307,11 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 10,
       marginBottom: 10,
       width: 300,
+    },
+    addButton: {
+      borderRadius: 10,
+      justifyContent: "flex-start",
+      columnGap: 10,
+      width: 140,
     },
   });
