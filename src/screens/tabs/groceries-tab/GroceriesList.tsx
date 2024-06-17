@@ -35,18 +35,17 @@ export function GroceriesList({ groceries, onCheckChange, onRefresh }: Groceries
       const existingIngredients = map.get(category) ?? [];
       map.set(category, i.isChecked ? [...existingIngredients, i] : [i, ...existingIngredients]);
     });
-
     return map;
   }, [groceries]);
 
   return (
     <ScrollView
-      contentContainerStyle={{ rowGap: 20 }}
+      contentContainerStyle={{ rowGap: 20, padding: 15 }}
       refreshControl={<RefreshControl onRefresh={handleRefresh} refreshing={isRefreshing} />}
     >
       {ingredientCategories.map((category, index) => (
         <View key={index}>
-          <Text style={styles.categoryTitle}>{category}</Text>
+          <Text style={category.length > 0 ? styles.categoryTitle : undefined}>{category}</Text>
           <View>
             {mappedIngredients.get(category)?.map((item, index) => (
               <View style={styles.itemContainer} key={index}>
@@ -85,13 +84,12 @@ export function GroceriesList({ groceries, onCheckChange, onRefresh }: Groceries
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     categoryTitle: {
-      padding: 10,
+      paddingTop: 10,
       paddingBottom: 0,
       fontSize: 16,
       fontWeight: "500",
     },
     itemContainer: {
-      paddingHorizontal: 10,
       paddingVertical: 15,
       borderBottomColor: colors.primary,
       borderBottomWidth: 0.2,

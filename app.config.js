@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "NourishMent",
     slug: "nourishment",
-    version: "1.2.2",
+    version: "1.2.4",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
@@ -17,7 +17,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.rgoyal.nourishment",
-      buildNumber: "23",
+      buildNumber: "25",
     },
     android: {
       adaptiveIcon: {

@@ -14,7 +14,7 @@ export function AccountTab() {
     <View style={styles.container}>
       <Text>Welcome {user?.email}!</Text>
 
-      <Button title="Sign Out" style={styles.button} onPress={() => signOut(auth)} />
+      <Button title="Sign Out" buttonStyle={styles.button} onPress={() => signOut(auth)} />
     </View>
   );
 }
@@ -29,5 +29,7 @@ const makeStyles = (colors: Colors) =>
     },
     button: {
       marginTop: 10,
+      width: 200,
+      borderRadius: 10,
     },
   });

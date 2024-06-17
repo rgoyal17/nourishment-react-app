@@ -13,8 +13,11 @@ import * as Sentry from "@sentry/react-native";
 import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { INGREDIENT_CATEGORIES, UNIT } from "../../../common/constants";
+import { UNIT } from "../../../common/constants";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import OpenAI from "openai";
+import Constants from "expo-constants";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type AddGroceryItemProps = StackScreenProps<GroceriesTabStackParamList, "AddGroceryItem">;
 
@@ -34,6 +37,9 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
+  const openai = new OpenAI({
+    apiKey: Constants.expoConfig?.extra?.openAiKey,
+  });
 
   const [groceryItems, setGroceryItems] = React.useState<GroceryItem[]>([]);
   const [stagedGroceryItem, setStagedGroceryItem] =
@@ -44,8 +50,32 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
 
   const unitBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const unitSnapPoints = React.useMemo(() => ["45%"], []);
-  const categoriesBottomSheetRef = React.useRef<BottomSheetModal>(null);
-  const categoriesSnapPoints = React.useMemo(() => ["45%"], []);
+
+  const fetchCategories = React.useCallback(async () => {
+    try {
+      const res = await openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a recipe ingredient parser. Given a list of ingredients, categorize them into one of ["Proteins",
+              "Vegetables and Fruits", "Grains and Cereals", "Dairy and Eggs", "Fats and Oils", "Nuts and Seeds",
+              "Herbs and Spices", "Sugars and Sweeteners", "Condiments and Sauces", "Beverages", "Legumes", "Other"].
+              Only use "Other" if you can't categorize the ingredient in any other category. Your response should be a json
+              that maps the ingredient to its category. For example, Given ["Apple","Rice"],
+              return {"Apple": "Vegetables and Fruits", "Rice": "Grains and Cereals"}`,
+          },
+          { role: "user", content: `[${groceryItems.map((i) => i.item).toString()}]` },
+        ],
+        response_format: { type: "json_object" },
+        model: "gpt-4o",
+      });
+      const jsonResponse = JSON.parse(res.choices[0].message.content ?? "");
+      return groceryItems.map((i) => ({ ...i, category: jsonResponse[i.item] ?? "" }));
+    } catch (e) {
+      Sentry.captureException(e);
+      return groceryItems;
+    }
+  }, [groceryItems, openai.chat.completions]);
 
   const addItemsToGroceries = React.useCallback(async () => {
     if (user?.uid == null) {
@@ -54,25 +84,27 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
     }
     try {
       setIsLoading(true);
-
+      const groceriesWithCategories = await fetchCategories();
       await dispatch(
         addGroceryItems({
           userId: user.uid,
           existingGroceryItems: groceriesState.groceryItems,
-          groceryItems: groceryItems,
+          groceryItems: groceriesWithCategories,
         }),
       );
-
       await dispatch(fetchGroceries(user.uid));
       navigation.navigate("GroceriesPage");
     } catch (e) {
       Sentry.captureException(e);
       Alert.alert("Failed to add grocery item");
     }
-  }, [dispatch, groceriesState.groceryItems, groceryItems, navigation, user?.uid]);
+  }, [dispatch, fetchCategories, groceriesState.groceryItems, navigation, user?.uid]);
 
   const handleConfirmStagedItem = React.useCallback(() => {
-    setGroceryItems((existingItems) => [...existingItems, stagedGroceryItem]);
+    setGroceryItems((existingItems) => [
+      ...existingItems,
+      { ...stagedGroceryItem, item: stagedGroceryItem.item.trim() },
+    ]);
     setStagedGroceryItem(INITIAL_GROCERY_ITEM);
     setIsAdding(false);
   }, [stagedGroceryItem]);
@@ -84,8 +116,8 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
 
   const handleEditItem = React.useCallback(
     (item: GroceryItem) => () => {
-      setGroceryItems((existingItems) => existingItems.filter((i) => i.item !== item.item));
       setStagedGroceryItem(item);
+      setGroceryItems((existingItems) => existingItems.filter((i) => i.item !== item.item));
       setIsAdding(true);
     },
     [],
@@ -104,20 +136,11 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
     [stagedGroceryItem],
   );
 
-  const handleSelectCategory = React.useCallback(
-    (category: string) => () => {
-      categoriesBottomSheetRef.current?.dismiss();
-      setStagedGroceryItem({ ...stagedGroceryItem, category: category === "-" ? "" : category });
-    },
-    [stagedGroceryItem],
-  );
-
   const units = ["-", ...Object.values(UNIT).filter((unit) => isNaN(Number(unit)))];
-  const categories = ["-", ...INGREDIENT_CATEGORIES];
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <KeyboardAwareScrollView
         keyboardShouldPersistTaps="handled"
         style={{ padding: 15 }}
         contentContainerStyle={{ rowGap: 10, paddingBottom: 40 }}
@@ -143,6 +166,16 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
           />
         ) : (
           <View style={styles.newIngredient}>
+            <TextInput
+              autoFocus={true}
+              style={{ ...styles.input, flex: 1 }}
+              value={stagedGroceryItem.item}
+              returnKeyType="done"
+              placeholder="Name"
+              onChangeText={(text: string) =>
+                setStagedGroceryItem((existingItem) => ({ ...existingItem, item: text }))
+              }
+            />
             <View style={styles.metadata}>
               <TextInput
                 style={{ ...styles.input, width: 80 }}
@@ -157,7 +190,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
               <TouchableOpacity onPress={() => unitBottomSheetRef.current?.present()}>
                 <TextInput
                   editable={false}
-                  style={{ ...styles.input, width: 80 }}
+                  style={{ ...styles.input, width: 110 }}
                   value={stagedGroceryItem.unit}
                   returnKeyType="done"
                   placeholder="Unit"
@@ -166,32 +199,6 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
                   }
                 />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => categoriesBottomSheetRef.current?.present()}
-                containerStyle={{ flex: 1 }}
-              >
-                <TextInput
-                  editable={false}
-                  style={{ ...styles.input }}
-                  value={stagedGroceryItem.category}
-                  returnKeyType="done"
-                  placeholder="Category"
-                  onChangeText={(category: string) =>
-                    setStagedGroceryItem((existingItem) => ({ ...existingItem, category }))
-                  }
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.itemRow}>
-              <TextInput
-                style={{ ...styles.input, flex: 1 }}
-                value={stagedGroceryItem.item}
-                returnKeyType="done"
-                placeholder="Name"
-                onChangeText={(text: string) =>
-                  setStagedGroceryItem((existingItem) => ({ ...existingItem, item: text }))
-                }
-              />
               <View style={styles.buttons}>
                 <Button
                   buttonStyle={styles.roundButton}
@@ -210,7 +217,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
             </View>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       {groceryItems.length > 0 ? (
         <Button
           containerStyle={{ alignItems: "center" }}
@@ -237,26 +244,6 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
               onPress={handleSelectUnit(unit.toString())}
             >
               <Text style={{ fontSize: 15 }}>{unit}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </BottomSheetModal>
-      <BottomSheetModal
-        enablePanDownToClose
-        ref={categoriesBottomSheetRef}
-        snapPoints={categoriesSnapPoints}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-        )}
-      >
-        <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
-          {categories.map((category, index) => (
-            <TouchableOpacity
-              style={{ paddingLeft: 15, padding: 7 }}
-              key={index}
-              onPress={handleSelectCategory(category)}
-            >
-              <Text style={{ fontSize: 15 }}>{category}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -290,6 +277,7 @@ const makeStyles = (colors: Colors) =>
       flexDirection: "row",
       columnGap: 5,
       alignItems: "center",
+      marginLeft: "auto",
     },
     input: {
       backgroundColor: colors.white,
