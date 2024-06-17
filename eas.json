@@ -16,14 +16,12 @@
     },
     "production": {
       "env": {
-        "FIREBASE_API_KEY": "AIzaSyDD2Oi-elKZQzyinvVVonltI1oVNUTlcAM",
         "FIREBASE_AUTH_DOMAIN": "nourishment-3c750.firebaseapp.com",
         "FIREBASE_PROJECT_ID": "nourishment-3c750",
         "FIREBASE_STORAGE_BUCKET": "nourishment-3c750.appspot.com",
         "FIREBASE_MESSAGING_SENDER_ID": "48603670002",
         "FIREBASE_APP_ID": "1:48603670002:web:1095a5394846681d7b376b",
-        "FIREBASE_MEASUREMENT_ID": "G-VT75X2YGD3",
-        "OPEN_AI_KEY": "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"
+        "FIREBASE_MEASUREMENT_ID": "G-VT75X2YGD3"
       }
     }
   },
