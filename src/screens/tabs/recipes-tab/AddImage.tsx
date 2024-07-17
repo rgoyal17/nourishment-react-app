@@ -5,12 +5,10 @@ import * as ImagePicker from "expo-image-picker";
 
 interface AddImageProps {
   image: string;
-  isLoading: boolean;
-
   onChangeImage: (image: string) => void;
 }
 
-export function AddImage({ image, isLoading, onChangeImage }: AddImageProps) {
+export function AddImage({ image, onChangeImage }: AddImageProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
 
@@ -28,19 +26,11 @@ export function AddImage({ image, isLoading, onChangeImage }: AddImageProps) {
   return (
     <View style={{ marginTop: 10 }}>
       {image === "" ? (
-        <Button
-          type="clear"
-          style={styles.imageZeroState}
-          disabled={isLoading}
-          loading={isLoading}
-          onPress={pickImage}
-        >
-          {isLoading ? null : (
-            <View>
-              <Icon name="photo" size={60} color={theme.colors.grey3} />
-              <Text style={styles.addPhotoText}>Add a photo</Text>
-            </View>
-          )}
+        <Button type="clear" style={styles.imageZeroState} onPress={pickImage}>
+          <View>
+            <Icon name="photo" size={60} color={theme.colors.grey3} />
+            <Text style={styles.addPhotoText}>Add a photo</Text>
+          </View>
         </Button>
       ) : (
         <ImageBackground style={styles.image} source={{ uri: image }}>

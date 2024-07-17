@@ -1,8 +1,6 @@
 import { Text, StyleSheet, TextInput, View, Alert } from "react-native";
 import React from "react";
-import { Button, CheckBox, Colors, useTheme } from "@rneui/themed";
-import OpenAI from "openai";
-import Constants from "expo-constants";
+import { Button, Colors, useTheme } from "@rneui/themed";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { AddImage } from "./AddImage";
 import { StackScreenProps } from "@react-navigation/stack";
@@ -48,9 +46,6 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
   const dispatch = useAppDispatch();
   const { recipe: recipeFromParent, source } = route.params;
 
-  const openai = new OpenAI({
-    apiKey: Constants.expoConfig?.extra?.openAiKey,
-  });
   const [recipe, setRecipe] = React.useReducer(
     (prev: Recipe, next: Partial<Recipe>) => ({ ...prev, ...next }),
     recipeFromParent ?? INITIAL_RECIPE,
@@ -65,11 +60,6 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     [recipe.instructions],
   );
 
-  const [shouldAutoGenerateImage, setShouldAutoGenerateImage] = React.useState(
-    source === "scratch",
-  );
-
-  const [isLoadingImage, setIsLoadingImage] = React.useState(false);
   const [isAddingRecipe, setIsAddingRecipe] = React.useState(false);
 
   const [validationErrors, setValidationErrors] = React.useReducer(
@@ -150,33 +140,6 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
     });
   }, [navigation, handleAddOrEditRecipe, isAddingRecipe, source]);
 
-  const generateImage = async () => {
-    if (!shouldAutoGenerateImage || recipe.title.trim() === "") {
-      return;
-    }
-    try {
-      setIsLoadingImage(true);
-      setRecipe({ image: "" });
-      const res = await openai.images.generate({
-        prompt: recipe.title,
-        response_format: "url",
-        size: "1024x1024",
-        model: "dall-e-3",
-      });
-      const image = res.data.at(0)?.url;
-      if (image == null) {
-        throw new Error("Failed to generate image");
-      }
-      setRecipe({ image });
-    } catch (e) {
-      Sentry.captureException(e);
-      Alert.alert("Failed to generate image");
-      setRecipe({ image: "" });
-    } finally {
-      setIsLoadingImage(false);
-    }
-  };
-
   return (
     <KeyboardAwareScrollView
       keyboardShouldPersistTaps="handled"
@@ -190,26 +153,12 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
         returnKeyType="done"
         placeholder="Enter title..."
         onChangeText={(title) => setRecipe({ title })}
-        onEndEditing={generateImage}
       />
       {validationErrors.isTitleEmpty ? (
         <Text style={styles.error}>Title cannot be empty</Text>
       ) : null}
-      {source === "scratch" ? (
-        <CheckBox
-          containerStyle={styles.checkBox}
-          title="AI generate my recipe image"
-          checked={shouldAutoGenerateImage}
-          uncheckedColor={theme.colors.primary}
-          onPress={() => setShouldAutoGenerateImage((prevAutoGen) => !prevAutoGen)}
-        />
-      ) : null}
       <Text style={styles.title}>Image</Text>
-      <AddImage
-        image={recipe.image}
-        isLoading={isLoadingImage}
-        onChangeImage={(image: string) => setRecipe({ image })}
-      />
+      <AddImage image={recipe.image} onChangeImage={(image: string) => setRecipe({ image })} />
       <Text style={styles.title}>Servings</Text>
       <Text style={styles.subLabel}>Ingredients can be automatically scaled using servings</Text>
       <TextInput
@@ -286,14 +235,6 @@ const makeStyles = (colors: Colors) =>
       fontSize: 20,
       fontWeight: "bold",
       marginTop: 20,
-    },
-
-    checkBox: {
-      backgroundColor: "transparent",
-      paddingLeft: 0,
-      marginLeft: 0,
-      marginBottom: 0,
-      paddingBottom: 0,
     },
 
     subLabel: {
