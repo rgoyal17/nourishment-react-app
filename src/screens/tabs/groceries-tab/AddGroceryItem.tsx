@@ -15,8 +15,6 @@ import { GroceriesTabStackParamList } from "./GroceriesTab";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { UNIT } from "../../../common/constants";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import OpenAI from "openai";
-import Constants from "expo-constants";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type AddGroceryItemProps = StackScreenProps<GroceriesTabStackParamList, "AddGroceryItem">;
@@ -37,9 +35,6 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const { user } = useAuthentication();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
-  const openai = new OpenAI({
-    apiKey: Constants.expoConfig?.extra?.openAiKey,
-  });
 
   const [groceryItems, setGroceryItems] = React.useState<GroceryItem[]>([]);
   const [stagedGroceryItem, setStagedGroceryItem] =
@@ -51,32 +46,6 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const unitBottomSheetRef = React.useRef<BottomSheetModal>(null);
   const unitSnapPoints = React.useMemo(() => ["45%"], []);
 
-  const fetchCategories = React.useCallback(async () => {
-    try {
-      const res = await openai.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: `You are a recipe ingredient parser. Given a list of ingredients, categorize them into one of ["Proteins",
-              "Vegetables and Fruits", "Grains and Cereals", "Dairy and Eggs", "Fats and Oils", "Nuts and Seeds",
-              "Herbs and Spices", "Sugars and Sweeteners", "Condiments and Sauces", "Beverages", "Legumes", "Other"].
-              Only use "Other" if you can't categorize the ingredient in any other category. Your response should be a json
-              that maps the ingredient to its category. For example, Given ["Apple","Rice"],
-              return {"Apple": "Vegetables and Fruits", "Rice": "Grains and Cereals"}`,
-          },
-          { role: "user", content: `[${groceryItems.map((i) => i.item).toString()}]` },
-        ],
-        response_format: { type: "json_object" },
-        model: "gpt-4o",
-      });
-      const jsonResponse = JSON.parse(res.choices[0].message.content ?? "");
-      return groceryItems.map((i) => ({ ...i, category: jsonResponse[i.item] ?? "" }));
-    } catch (e) {
-      Sentry.captureException(e);
-      return groceryItems;
-    }
-  }, [groceryItems, openai.chat.completions]);
-
   const addItemsToGroceries = React.useCallback(async () => {
     if (user?.uid == null) {
       Alert.alert("Please sign in to add a recipe");
@@ -84,12 +53,11 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
     }
     try {
       setIsLoading(true);
-      const groceriesWithCategories = await fetchCategories();
       await dispatch(
         addGroceryItems({
           userId: user.uid,
           existingGroceryItems: groceriesState.groceryItems,
-          groceryItems: groceriesWithCategories,
+          groceryItems: groceryItems,
         }),
       );
       await dispatch(fetchGroceries(user.uid));
@@ -98,7 +66,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
       Sentry.captureException(e);
       Alert.alert("Failed to add grocery item");
     }
-  }, [dispatch, fetchCategories, groceriesState.groceryItems, navigation, user?.uid]);
+  }, [dispatch, groceriesState.groceryItems, groceryItems, navigation, user?.uid]);
 
   const handleConfirmStagedItem = React.useCallback(() => {
     setGroceryItems((existingItems) => [
