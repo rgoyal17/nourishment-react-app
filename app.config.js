@@ -45,6 +45,7 @@ export default {
 
       iosClientId: process.env.IOS_CLIENT_ID,
       androidClientId: process.env.ANDROID_CLIENT_ID,
+      webClientId: process.env.WEB_CLIENT_ID,
 
       eas: {
         projectId: "4c4f8aa6-6d7a-44a7-833e-d5fc6f60dcbf",

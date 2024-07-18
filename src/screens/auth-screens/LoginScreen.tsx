@@ -1,6 +1,6 @@
 import React from "react";
 import { ImageBackground, StyleSheet, Text, TextInput, View } from "react-native";
-import { Button, Colors, Icon, Input, SocialIcon, useTheme } from "@rneui/themed";
+import { Button, Colors, Icon, Input, useTheme } from "@rneui/themed";
 import { Input as BaseInput } from "@rneui/base";
 import {
   GoogleAuthProvider,
@@ -14,8 +14,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import * as Sentry from "@sentry/react-native";
 import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 import { SortOption } from "../../redux/recipeSortSlice";
-import * as Google from "expo-auth-session/providers/google";
 import Constants from "expo-constants";
+import { GoogleSignin, GoogleSigninButton } from "@react-native-google-signin/google-signin";
 
 interface LoginState {
   email: string;
@@ -59,11 +59,6 @@ export function LoginScreen() {
   const passwordRef = React.createRef<BaseInput & TextInput>();
   const confirmPasswordRef = React.useRef<BaseInput & TextInput>(null);
 
-  const [_request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: Constants.expoConfig?.extra?.iosClientId,
-    androidClientId: Constants.expoConfig?.extra?.androidClientId,
-  });
-
   const setupDatabase = React.useCallback(async (user: User) => {
     const db = getFirestore();
     const userDoc = await getDoc(doc(db, `users/${user.uid}`));
@@ -76,15 +71,23 @@ export function LoginScreen() {
   }, []);
 
   React.useEffect(() => {
-    if (response?.type === "success") {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
+    GoogleSignin.configure({ webClientId: Constants.expoConfig?.extra?.webClientId });
+  }, []);
+
+  const googleSignIn = React.useCallback(async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const { idToken } = await GoogleSignin.signIn();
+      const credential = GoogleAuthProvider.credential(idToken);
       signInWithCredential(auth, credential).then(({ user }) => {
         // set up the database in case the user is singing up
         setupDatabase(user);
       });
+    } catch (e) {
+      Sentry.captureException(e);
+      setLoginState({ error: "Failed to sign in" });
     }
-  }, [auth, response, setupDatabase]);
+  }, [auth, setupDatabase]);
 
   const handleChangeTab = (tabId: number) => () => {
     setLoginState({ error: "" });
@@ -264,11 +267,10 @@ export function LoginScreen() {
               <Text style={{ color: grey3 }}>or connect with</Text>
               <View style={styles.divider} />
             </View>
-            <SocialIcon
-              button={true}
-              onPress={() => promptAsync()}
-              type="google"
-              title={selectedTab == 0 ? "Sign in with Google" : "Sign up with Google"}
+            <GoogleSigninButton
+              size={GoogleSigninButton.Size.Wide}
+              color={GoogleSigninButton.Color.Dark}
+              onPress={googleSignIn}
               style={styles.googleButton}
             />
           </View>
@@ -359,7 +361,6 @@ const makeStyles = (colors: Colors) =>
     },
 
     googleButton: {
-      width: 300,
       marginTop: 20,
     },
   });
