@@ -15,7 +15,12 @@ import * as Sentry from "@sentry/react-native";
 import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 import { SortOption } from "../../redux/recipeSortSlice";
 import Constants from "expo-constants";
-import { GoogleSignin, GoogleSigninButton } from "@react-native-google-signin/google-signin";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  isErrorWithCode,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 
 interface LoginState {
   email: string;
@@ -45,7 +50,7 @@ export function LoginScreen() {
     (prev: LoginState, next: Partial<LoginState>) => {
       const nextState = { ...prev, ...next };
       if (next.error == null && next.loading == null) {
-        // reset the error if email, password ,or confirm password change.
+        // reset the error if email, password, or confirm password change.
         nextState.error = "";
       }
       return nextState;
@@ -76,6 +81,7 @@ export function LoginScreen() {
 
   const googleSignIn = React.useCallback(async () => {
     try {
+      setLoginState({ loading: true, error: "" });
       await GoogleSignin.hasPlayServices();
       const { idToken } = await GoogleSignin.signIn();
       const credential = GoogleAuthProvider.credential(idToken);
@@ -83,9 +89,22 @@ export function LoginScreen() {
         // set up the database in case the user is singing up
         setupDatabase(user);
       });
-    } catch (e) {
-      Sentry.captureException(e);
-      setLoginState({ error: "Failed to sign in" });
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.IN_PROGRESS:
+          case statusCodes.SIGN_IN_CANCELLED:
+            return;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            setLoginState({ error: "Google play services not available" });
+            return;
+        }
+      } else {
+        Sentry.captureException(error);
+        setLoginState({ error: "Failed to sign in" });
+      }
+    } finally {
+      setLoginState({ loading: false });
     }
   }, [auth, setupDatabase]);
 
@@ -272,6 +291,7 @@ export function LoginScreen() {
               color={GoogleSigninButton.Color.Dark}
               onPress={googleSignIn}
               style={styles.googleButton}
+              disabled={loginState.loading}
             />
           </View>
         </ImageBackground>
@@ -336,6 +356,7 @@ const makeStyles = (colors: Colors) =>
 
     error: {
       color: colors.error,
+      marginBottom: 5,
     },
 
     button: {
