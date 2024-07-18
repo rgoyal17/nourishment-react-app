@@ -1,10 +1,9 @@
 import React from "react";
-import { useAuthentication } from "../hooks/useAuthentication";
 import { UserStack } from "./UserStack";
 import { LoginScreen } from "../screens/auth-screens/LoginScreen";
+import { useAuthContext } from "../contexts/AuthContext";
 
 export function RootNavigation() {
-  const { user } = useAuthentication();
-
+  const { user } = useAuthContext();
   return user ? <UserStack /> : <LoginScreen />;
 }

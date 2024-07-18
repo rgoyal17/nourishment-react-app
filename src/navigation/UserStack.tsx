@@ -7,12 +7,12 @@ import { GroceriesTab } from "../screens/tabs/groceries-tab/GroceriesTab";
 import { CalendarTab } from "../screens/tabs/calendar-tab/CalendarTab";
 import { AccountTab } from "../screens/tabs/account-tab/AccountTab";
 import { HEADER_HEIGHT } from "../common/constants";
-import { useAuthentication } from "../hooks/useAuthentication";
 import { fetchGroceries } from "../redux/groceriesSlice";
 import { useAppDispatch } from "../redux/hooks";
 import { fetchRecipes } from "../redux/recipesSlice";
 import { fetchCalendarItems } from "../redux/calendarSlice";
 import { fetchRecipeSortOption } from "../redux/recipeSortSlice";
+import { useAuthContext } from "../contexts/AuthContext";
 
 export type UserStackParamList = {
   RecipesTab: undefined;
@@ -26,7 +26,7 @@ const Tab = createBottomTabNavigator<UserStackParamList>();
 export function UserStack() {
   const { theme } = useTheme();
   const { primary, secondary, grey2 } = theme.colors;
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
 
   React.useEffect(() => {

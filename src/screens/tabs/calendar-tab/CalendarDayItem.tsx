@@ -18,8 +18,8 @@ import {
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { Recipe, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import * as Sentry from "@sentry/react-native";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 interface CalendarDayItemProps {
   calendarItem: CalendarItem;
@@ -32,7 +32,7 @@ function CalendarDayItem({ calendarItem, onEditRecipe, onNavigateToRecipe }: Cal
   const { primary, secondary, error } = theme.colors;
   const styles = makeStyles(theme.colors);
   const dispatch = useAppDispatch();
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
 
   const [isDeletingIndex, setIsDeletingIndex] = React.useState(-1);
   const [refreshing, setRefreshing] = React.useState(false);

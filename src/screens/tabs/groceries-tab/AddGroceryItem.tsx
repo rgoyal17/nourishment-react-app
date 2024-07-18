@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Colors, Icon, useTheme } from "@rneui/themed";
 import { View, StyleSheet, Alert, ScrollView, TextInput, Text } from "react-native";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
   GroceryItem,
@@ -16,6 +15,7 @@ import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { UNIT } from "../../../common/constants";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type AddGroceryItemProps = StackScreenProps<GroceriesTabStackParamList, "AddGroceryItem">;
 
@@ -32,7 +32,7 @@ export function AddGroceryItem({ navigation }: AddGroceryItemProps) {
   const { theme } = useTheme();
   const { success, white, error, grey2, primary, secondary } = theme.colors;
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
 

@@ -5,7 +5,6 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { getDatesInRange, getMonthDateString } from "../../../common/date";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { fetchCalendarItems, selectAllCalendarItems } from "../../../redux/calendarSlice";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { ZeroState } from "../../../common/ZeroState";
 import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
@@ -23,13 +22,14 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { GroceriesList } from "./GroceriesList";
 import { combineIngredients } from "../../../common/combineIngredients";
 import { BottomSheetList } from "../../../common/BottomSheetList";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type CalendarGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "CalendarGroceries">;
 
 export function CalendarGroceries({ navigation }: CalendarGroceriesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
   const allCalendarItems = useAppSelector(selectAllCalendarItems);

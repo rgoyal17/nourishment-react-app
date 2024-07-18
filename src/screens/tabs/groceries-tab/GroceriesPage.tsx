@@ -3,7 +3,6 @@ import { StackScreenProps } from "@react-navigation/stack";
 import { GroceriesTabStackParamList } from "./GroceriesTab";
 import { View, StyleSheet } from "react-native";
 import { Button, Colors, FAB, Icon, useTheme } from "@rneui/themed";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
   GroceryItem,
@@ -17,13 +16,14 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { GroceriesList } from "./GroceriesList";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { BottomSheetList } from "../../../common/BottomSheetList";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type GroceriesProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
 
 export function GroceriesPage({ navigation }: GroceriesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const groceriesState = useAppSelector(selectGroceriesState);
   const groceries = groceriesState.groceryItems;

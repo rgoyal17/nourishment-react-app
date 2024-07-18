@@ -9,6 +9,7 @@ import { store } from "./src/redux/store";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Sentry from "@sentry/react-native";
+import { AuthContextProvider } from "./src/contexts/AuthContext";
 
 Sentry.init({
   dsn: "https://8ee5743505d3d27efcf6670609f4b97c@o4506578882396160.ingest.sentry.io/4506584065835008",
@@ -30,7 +31,9 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
-            <RootNavigation />
+            <AuthContextProvider>
+              <RootNavigation />
+            </AuthContextProvider>
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
       </ThemeProvider>

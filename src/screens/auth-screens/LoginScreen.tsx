@@ -1,13 +1,21 @@
 import React from "react";
 import { ImageBackground, StyleSheet, Text, TextInput, View } from "react-native";
-import { Button, Colors, Icon, Input, useTheme } from "@rneui/themed";
+import { Button, Colors, Icon, Input, SocialIcon, useTheme } from "@rneui/themed";
 import { Input as BaseInput } from "@rneui/base";
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  User,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Sentry from "@sentry/react-native";
-import { doc, getFirestore, setDoc } from "firebase/firestore";
+import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 import { SortOption } from "../../redux/recipeSortSlice";
-// import { SocialIcon } from "@rneui/base";
+import * as Google from "expo-auth-session/providers/google";
+import Constants from "expo-constants";
 
 interface LoginState {
   email: string;
@@ -27,7 +35,7 @@ const INITIAL_LOGIN_STATE: LoginState = {
 
 export function LoginScreen() {
   const { theme } = useTheme();
-  const { primary } = theme.colors;
+  const { primary, grey3 } = theme.colors;
   const styles = makeStyles(theme.colors);
   const auth = getAuth();
 
@@ -50,6 +58,33 @@ export function LoginScreen() {
 
   const passwordRef = React.createRef<BaseInput & TextInput>();
   const confirmPasswordRef = React.useRef<BaseInput & TextInput>(null);
+
+  const [_request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: Constants.expoConfig?.extra?.iosClientId,
+    androidClientId: Constants.expoConfig?.extra?.androidClientId,
+  });
+
+  const setupDatabase = React.useCallback(async (user: User) => {
+    const db = getFirestore();
+    const userDoc = await getDoc(doc(db, `users/${user.uid}`));
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, `users/${user.uid}`), {
+        recipeSortOption: SortOption.Name,
+        groceries: [],
+      });
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (response?.type === "success") {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      signInWithCredential(auth, credential).then(({ user }) => {
+        // set up the database in case the user is singing up
+        setupDatabase(user);
+      });
+    }
+  }, [auth, response, setupDatabase]);
 
   const handleChangeTab = (tabId: number) => () => {
     setLoginState({ error: "" });
@@ -99,13 +134,8 @@ export function LoginScreen() {
 
     try {
       setLoginState({ loading: true });
-      const user = await createUserWithEmailAndPassword(auth, email, password);
-      const db = getFirestore();
-      // create user doc with some default initial values
-      await setDoc(doc(db, `users/${user.user.uid}`), {
-        recipeSortOption: SortOption.Name,
-        groceries: [],
-      });
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      await setupDatabase(user);
     } catch (error: any) {
       if (error.code === "auth/invalid-email") {
         setLoginState({ error: "Invalid email address" });
@@ -120,7 +150,7 @@ export function LoginScreen() {
     } finally {
       setLoginState({ loading: false });
     }
-  }, [auth, loginState]);
+  }, [auth, loginState, setupDatabase]);
 
   const handlePasswordDone = React.useCallback(() => {
     if (selectedTab === 0) {
@@ -229,6 +259,18 @@ export function LoginScreen() {
                 onPress={signUp}
               />
             )}
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={{ color: grey3 }}>or connect with</Text>
+              <View style={styles.divider} />
+            </View>
+            <SocialIcon
+              button={true}
+              onPress={() => promptAsync()}
+              type="google"
+              title={selectedTab == 0 ? "Sign in with Google" : "Sign up with Google"}
+              style={styles.googleButton}
+            />
           </View>
         </ImageBackground>
       </View>
@@ -249,7 +291,7 @@ const makeStyles = (colors: Colors) =>
 
     content: {
       flex: 1,
-      marginTop: 250,
+      marginTop: 200,
       padding: 40,
       alignItems: "center",
     },
@@ -271,6 +313,8 @@ const makeStyles = (colors: Colors) =>
     header: {
       fontSize: 40,
       color: colors.primary,
+      textShadowColor: colors.primary,
+      textShadowRadius: 2,
       marginBottom: 20,
       fontWeight: "500",
     },
@@ -293,7 +337,6 @@ const makeStyles = (colors: Colors) =>
     },
 
     button: {
-      marginTop: 10,
       borderRadius: 15,
     },
 
@@ -301,9 +344,22 @@ const makeStyles = (colors: Colors) =>
       width: "100%",
     },
 
-    googleButton: {
-      width: 200,
+    dividerContainer: {
+      flexDirection: "row",
+      columnGap: 10,
+      alignItems: "center",
+      justifyContent: "center",
       marginTop: 20,
-      backgroundColor: colors.primary,
+    },
+
+    divider: {
+      width: 100,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.grey3,
+    },
+
+    googleButton: {
+      width: 300,
+      marginTop: 20,
     },
   });

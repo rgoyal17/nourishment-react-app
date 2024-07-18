@@ -5,7 +5,6 @@ import { StyleSheet, View } from "react-native";
 import { CalendarProvider, ExpandableCalendar } from "react-native-calendars";
 import { MarkedDates } from "react-native-calendars/src/types";
 import { CalendarTabStackParamList } from "./CalendarTab";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import {
   CalendarItemData,
@@ -17,6 +16,7 @@ import { MemoizedCalendarDayItem } from "./CalendarDayItem";
 import { Recipe } from "../../../redux/recipesSlice";
 import { getLocalDateString } from "../../../common/date";
 import { ZeroState } from "../../../common/ZeroState";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarPage">;
 
@@ -24,7 +24,7 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { primary } = theme.colors;
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
 
   const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));

@@ -28,10 +28,10 @@ import {
   selectRecipeById,
   updateRecipe,
 } from "../../../redux/recipesSlice";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { fetchCalendarItems } from "../../../redux/calendarSlice";
 import { BottomSheetList } from "../../../common/BottomSheetList";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type RecipeItemProps = StackScreenProps<RecipesTabStackParamList, "RecipeItem">;
 
@@ -63,7 +63,7 @@ function LoadedRecipeItem({ navigation, recipe }: LoadedRecipeItemProps) {
   const styles = makeStyles(theme.colors);
   const db = getFirestore();
   const dispatch = useAppDispatch();
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
   const [servings, setServings] = React.useState(recipe.servings);
   const [parsedIngredients, setParsedIngredients] = React.useState(recipe.ingredientsParsed);

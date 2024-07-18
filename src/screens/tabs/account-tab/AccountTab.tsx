@@ -1,11 +1,11 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { Button, Colors, useTheme } from "@rneui/themed";
 import { getAuth, signOut } from "firebase/auth";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 export function AccountTab() {
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const auth = getAuth();
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);

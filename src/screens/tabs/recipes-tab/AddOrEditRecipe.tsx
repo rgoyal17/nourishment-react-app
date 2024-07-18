@@ -5,11 +5,11 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { AddImage } from "./AddImage";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RecipesTabStackParamList } from "./RecipesTab";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { Recipe, addNewRecipe, editRecipe, fetchRecipes } from "../../../redux/recipesSlice";
 import { useAppDispatch } from "../../../redux/hooks";
 import * as Sentry from "@sentry/react-native";
 import { isEqual } from "lodash";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 export const INITIAL_RECIPE: Recipe = {
   id: "",
@@ -42,7 +42,7 @@ type AddOrEditRecipeProps = StackScreenProps<RecipesTabStackParamList, "AddOrEdi
 export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const { recipe: recipeFromParent, source } = route.params;
 
@@ -174,8 +174,7 @@ export function AddOrEditRecipe({ navigation, route }: AddOrEditRecipeProps) {
         style={[styles.input, styles.tallerInput]}
         value={recipe.ingredientsRaw.join("\n")}
         multiline={true}
-        placeholder="Write each ingredient on its own line (e.g. 1 lb potatoes).
-Optional: add section headers (e.g. #spices)"
+        placeholder="Write each ingredient on its own line (e.g. 1 lb potatoes)."
         onChangeText={(value) => setRecipe({ ingredientsRaw: value.split("\n") })}
       />
       {validationErrors.isIngredientsEmpty ? (

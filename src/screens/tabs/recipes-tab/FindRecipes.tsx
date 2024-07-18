@@ -13,16 +13,16 @@ import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { fetchRecipes, selectAllRecipes, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { MultiSelect } from "../../../common/MultiSelect";
 import { compact } from "lodash";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RecipesTabStackParamList } from "./RecipesTab";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type FindRecipesProps = StackScreenProps<RecipesTabStackParamList, "FindRecipes">;
 
 export function FindRecipes({ navigation }: FindRecipesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const recipes = useAppSelector(selectAllRecipes);
 

@@ -6,7 +6,6 @@ import { RecipesTabStackParamList } from "./RecipesTab";
 import { StackScreenProps } from "@react-navigation/stack";
 import { fetchRecipes, selectRecipesState } from "../../../redux/recipesSlice";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { ActivityIndicator } from "react-native";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { v4 as uuidv4 } from "uuid";
@@ -21,13 +20,14 @@ import {
 } from "../../../redux/recipeSortSlice";
 import { BottomSheetList } from "../../../common/BottomSheetList";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
 export function Recipes({ navigation }: RecipesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const recipesState = useAppSelector(selectRecipesState);
   const recipes = recipesState.recipes;

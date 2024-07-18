@@ -18,8 +18,11 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.rgoyal.nourishment",
       buildNumber: "27",
+      googleServicesFile: process.env.GOOGLE_SERVICES_INFOPLIST,
     },
     android: {
+      package: "com.rgoyal.nourishment",
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON,
       adaptiveIcon: {
         foregroundImage: "./assets/background.png",
         backgroundColor: "#ffffff",
@@ -28,7 +31,7 @@ export default {
     web: {
       favicon: "./assets/favicon.png",
     },
-    plugins: ["sentry-expo"],
+    plugins: ["sentry-expo", "@react-native-google-signin/google-signin"],
     extra: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
       firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -40,9 +43,13 @@ export default {
 
       openAiKey: process.env.OPEN_AI_KEY,
 
+      iosClientId: process.env.IOS_CLIENT_ID,
+      androidClientId: process.env.ANDROID_CLIENT_ID,
+
       eas: {
         projectId: "4c4f8aa6-6d7a-44a7-833e-d5fc6f60dcbf",
       },
     },
+    scheme: "nourishment",
   },
 };

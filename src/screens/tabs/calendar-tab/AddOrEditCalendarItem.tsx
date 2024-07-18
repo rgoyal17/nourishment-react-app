@@ -19,10 +19,10 @@ import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { Recipe, selectAllRecipes, selectRecipesByIds } from "../../../redux/recipesSlice";
 import { StackScreenProps } from "@react-navigation/stack";
 import { CalendarTabStackParamList } from "./CalendarTab";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import * as Sentry from "@sentry/react-native";
 import { getLocalDateString } from "../../../common/date";
 import { MultiSelect } from "../../../common/MultiSelect";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type AddOrEditCalendarItemProps = StackScreenProps<
   CalendarTabStackParamList,
@@ -32,7 +32,7 @@ type AddOrEditCalendarItemProps = StackScreenProps<
 export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarItemProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const editItem = route.params.editItem;
   const recipeIds = editItem?.calendarItemData.recipeIds ?? [];

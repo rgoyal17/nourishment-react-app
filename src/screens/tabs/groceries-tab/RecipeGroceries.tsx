@@ -3,7 +3,6 @@ import React from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { Recipe, fetchRecipes, selectAllRecipes } from "../../../redux/recipesSlice";
-import { useAuthentication } from "../../../hooks/useAuthentication";
 import { MultiSelect } from "../../../common/MultiSelect";
 import { combineIngredients } from "../../../common/combineIngredients";
 import { GroceriesList } from "./GroceriesList";
@@ -19,13 +18,14 @@ import { GroceriesTabStackParamList } from "./GroceriesTab";
 import * as Sentry from "@sentry/react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BottomSheetList } from "../../../common/BottomSheetList";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 type RecipeGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "RecipeGroceries">;
 
 export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
-  const { user } = useAuthentication();
+  const { user } = useAuthContext();
   const dispatch = useAppDispatch();
   const recipes = useAppSelector(selectAllRecipes);
   const groceriesState = useAppSelector(selectGroceriesState);
