@@ -1,11 +1,12 @@
 ## Nourishment Meal Prep Mobile App
-This repository contains code for the NourishMent Meal Prep mobile app.
+Transform meal planning with NourishMent!
 - NourishMent allows you to add recipes in two ways - manually create them or simply paste the recipe's web URL and we will parse it for you!
 - Powered by Open AI's GPT-4o, your recipe will be cleaned, parsed, and formatted for you.
 - You can then add your recipes to your meal prep calendar to plan your week.
 - Easily generate a list of groceries from your meal prep calendar, saved recipes, or just manually add items.
 
-This app is currently in the testing phase on TestFlight (ios). Email me at rishabhgoyal555@gmail.com if you are interested in testing. Here are some screenshots from the app:
+Email me at support@nourishmentmealprep.com for any feedback!
+Here are some screenshots from the app:
 
 <div style="display: flex">
   <div>
