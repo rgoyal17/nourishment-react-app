@@ -1,4 +1,4 @@
-## Nourishment Meal Prep Mobile App
+## Nourishment
 Transform meal planning with NourishMent!
 - NourishMent allows you to add recipes in two ways - manually create them or simply paste the recipe's web URL and we will parse it for you!
 - Powered by Open AI's GPT-4o, your recipe will be cleaned, parsed, and formatted for you.
@@ -8,7 +8,7 @@ Transform meal planning with NourishMent!
 Email me at support@nourishmentmealprep.com for any feedback!
 Here are some screenshots from the app:
 
-<div style="display: flex">
+<div style="display: flex; column-gap: 5px;">
   <div>
     <h3>Recipes</h3>
     <p>This is your saved list of recipes. You can view, search, and sort them here.</p>
