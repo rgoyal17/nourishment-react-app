@@ -69,7 +69,8 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
             userId: user.uid,
             date: editItem.date,
             prevData: editItem.calendarItemData,
-            newData: { label, recipeIds },
+            newData:
+              label == null || label.trim().length === 0 ? { recipeIds } : { label, recipeIds },
           }),
         );
       } else {
@@ -77,7 +78,8 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
           addNewCalendarItem({
             userId: user.uid,
             date: getLocalDateString(date),
-            recipeData: label == null ? { recipeIds } : { label, recipeIds },
+            recipeData:
+              label == null || label.trim().length === 0 ? { recipeIds } : { label, recipeIds },
           }),
         );
       }

@@ -1,6 +1,13 @@
 import { Button, Colors, Icon, useTheme } from "@rneui/themed";
 import React from "react";
-import { ImageBackground, TouchableOpacity, View, Text, StyleSheet } from "react-native";
+import {
+  ImageBackground,
+  TouchableOpacity,
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 interface AddImageProps {
@@ -11,6 +18,7 @@ interface AddImageProps {
 export function AddImage({ image, onChangeImage }: AddImageProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
+  const [isImageLoaded, setIsImageLoaded] = React.useState(false);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -33,27 +41,35 @@ export function AddImage({ image, onChangeImage }: AddImageProps) {
           </View>
         </Button>
       ) : (
-        <ImageBackground style={styles.image} source={{ uri: image }}>
-          <View style={styles.imageButtons}>
-            <TouchableOpacity
-              style={{
-                ...styles.roundButton,
-                backgroundColor: theme.colors.primary,
-              }}
-              onPress={pickImage}
-            >
-              <Icon name="edit" color={theme.colors.white} size={15} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                ...styles.roundButton,
-                backgroundColor: theme.colors.error,
-              }}
-              onPress={() => onChangeImage("")}
-            >
-              <Icon name="delete" color={theme.colors.white} size={15} />
-            </TouchableOpacity>
-          </View>
+        <ImageBackground
+          style={styles.image}
+          source={{ uri: image }}
+          onLoadEnd={() => setIsImageLoaded(true)}
+        >
+          {isImageLoaded ? (
+            <View style={styles.imageButtons}>
+              <TouchableOpacity
+                style={{
+                  ...styles.roundButton,
+                  backgroundColor: theme.colors.primary,
+                }}
+                onPress={pickImage}
+              >
+                <Icon name="edit" color={theme.colors.white} size={15} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  ...styles.roundButton,
+                  backgroundColor: theme.colors.error,
+                }}
+                onPress={() => onChangeImage("")}
+              >
+                <Icon name="delete" color={theme.colors.white} size={15} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
+          )}
         </ImageBackground>
       )}
     </View>
@@ -69,6 +85,13 @@ const makeStyles = (colors: Colors) =>
       borderRadius: 10,
       justifyContent: "center",
       alignItems: "center",
+    },
+
+    activityIndicator: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.secondary,
+      height: 256,
+      width: "100%",
     },
 
     addPhotoText: {

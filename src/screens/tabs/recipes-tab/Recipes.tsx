@@ -222,7 +222,7 @@ export function Recipes({ navigation }: RecipesProps) {
             </TouchableOpacity>
           )}
           numColumns={2}
-          keyExtractor={(_, index) => `${index}`}
+          keyExtractor={(r) => r.id}
           refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         />
       ) : (
