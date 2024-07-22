@@ -1,4 +1,4 @@
-## Nourishment
+## NourishMent
 Transform meal planning with NourishMent!
 - NourishMent allows you to add recipes in two ways - manually create them or simply paste the recipe's web URL and we will parse it for you!
 - Powered by Open AI's GPT-4o, your recipe will be cleaned, parsed, and formatted for you.
