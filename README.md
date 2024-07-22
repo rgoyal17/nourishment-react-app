@@ -1,13 +1,14 @@
-## Nourishment Meal Prep Mobile App
-This repository contains code for the NourishMent Meal Prep mobile app.
+## Nourishment
+Transform meal planning with NourishMent!
 - NourishMent allows you to add recipes in two ways - manually create them or simply paste the recipe's web URL and we will parse it for you!
 - Powered by Open AI's GPT-4o, your recipe will be cleaned, parsed, and formatted for you.
 - You can then add your recipes to your meal prep calendar to plan your week.
 - Easily generate a list of groceries from your meal prep calendar, saved recipes, or just manually add items.
 
-This app is currently in the testing phase on TestFlight (ios). Email me at rishabhgoyal555@gmail.com if you are interested in testing. Here are some screenshots from the app:
+Email me at [support@nourishmentmealprep.com](mailto:support@nourishmentmealprep.com) for any feedback!
+Here are some screenshots from the app:
 
-<div style="display: flex">
+<div style="display: flex; column-gap: 15px;">
   <div>
     <h3>Recipes</h3>
     <p>This is your saved list of recipes. You can view, search, and sort them here.</p>
@@ -27,13 +28,13 @@ This app is currently in the testing phase on TestFlight (ios). Email me at rish
   </div>
   
   <div>
-    <h3>Meal Prep Calendar</h3>
+    <h3>Calendar</h3>
     <p>This is where you keep track of what recipes you are going to make on a particular day.</p>
     <img src="https://github.com/rgoyal17/nourishment-react-app/assets/55811460/cca6dda6-edef-430f-b157-568f1c69cd9d" width="200"/>
   </div>
 
   <div>
-    <h3>Groceries Tab</h3>
+    <h3>Groceries</h3>
     <p>Here you can curate a list of groceries from your existing recipes, meal prep calendar, or add them manually.</p>
     <img src="https://github.com/rgoyal17/nourishment-react-app/assets/55811460/b8e35ad3-c33a-4b1f-bdca-3c62268d5775" width="200"/>
   </div>
