@@ -18,9 +18,9 @@ import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { BottomSheetList } from "../../../common/BottomSheetList";
 import { useAuthContext } from "../../../contexts/AuthContext";
 
-type GroceriesProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
+type GroceriesPageProps = StackScreenProps<GroceriesTabStackParamList, "GroceriesPage">;
 
-export function GroceriesPage({ navigation }: GroceriesProps) {
+export function GroceriesPage({ navigation }: GroceriesPageProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { user } = useAuthContext();

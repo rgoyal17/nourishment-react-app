@@ -1,6 +1,5 @@
 import { PayloadAction, createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
-import { ref, getDownloadURL, getStorage, uploadBytesResumable } from "firebase/storage";
 import {
   getFirestore,
   setDoc,
@@ -13,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { CalendarItem } from "./calendarSlice";
+import { uploadImageToFirebase } from "../common/uploadImageToFirebase";
 
 export interface Ingredient {
   category: string;
@@ -67,7 +67,7 @@ export const addNewRecipe = createAsyncThunk(
 
     let image = "";
     if (recipe.image !== "") {
-      image = await uploadToFirebase(recipe.image, `${userId}/${id}/image.jpg`);
+      image = await uploadImageToFirebase(recipe.image, `${userId}/${id}/image.jpg`);
     }
 
     const db = getFirestore();
@@ -162,17 +162,6 @@ const recipesSlice = createSlice({
     }));
   },
 });
-
-const uploadToFirebase = async (imageUri: string, storagePath: string): Promise<string> => {
-  const fetchResponse = await fetch(imageUri);
-  const blob = await fetchResponse.blob();
-
-  const imageRef = ref(getStorage(), storagePath);
-  const uploadTask = await uploadBytesResumable(imageRef, blob);
-
-  const downloadUrl = await getDownloadURL(uploadTask.ref);
-  return downloadUrl;
-};
 
 export const { updateRecipe } = recipesSlice.actions;
 

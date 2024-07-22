@@ -13,6 +13,7 @@ import { fetchRecipes } from "../redux/recipesSlice";
 import { fetchCalendarItems } from "../redux/calendarSlice";
 import { fetchRecipeSortOption } from "../redux/recipeSortSlice";
 import { useAuthContext } from "../contexts/AuthContext";
+import { fetchUserProfile } from "../redux/userProfileSlice";
 
 export type UserStackParamList = {
   RecipesTab: undefined;
@@ -35,6 +36,7 @@ export function UserStack() {
       dispatch(fetchRecipeSortOption(user.uid));
       dispatch(fetchCalendarItems(user.uid));
       dispatch(fetchGroceries(user.uid));
+      dispatch(fetchUserProfile(user.uid));
     }
   }, [dispatch, user]);
 
@@ -87,6 +89,7 @@ export function UserStack() {
             tabBarIcon: ({ focused }) => (
               <Icon name="user" type="font-awesome" color={focused ? secondary : grey2} />
             ),
+            headerShown: false,
             title: "Account",
           }}
           name="AccountTab"

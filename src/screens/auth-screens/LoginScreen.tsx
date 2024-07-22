@@ -21,6 +21,8 @@ import {
   isErrorWithCode,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
+import { uploadImageToFirebase } from "../../common/uploadImageToFirebase";
+import { UserProfile } from "../../redux/userProfileSlice";
 
 interface LoginState {
   email: string;
@@ -68,9 +70,17 @@ export function LoginScreen() {
     const db = getFirestore();
     const userDoc = await getDoc(doc(db, `users/${user.uid}`));
     if (!userDoc.exists()) {
+      // store photo in firebase and use that link
+      let profile: UserProfile = { uid: user.uid, email: user.email, name: user.displayName };
+      if (user.photoURL != null) {
+        const photo = await uploadImageToFirebase(user.photoURL, `${user.uid}/image.jpg`);
+        profile = { ...profile, photo };
+      }
+
       await setDoc(doc(db, `users/${user.uid}`), {
         recipeSortOption: SortOption.Name,
         groceries: [],
+        profile,
       });
     }
   }, []);

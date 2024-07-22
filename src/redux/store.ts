@@ -3,6 +3,7 @@ import { recipesReducer } from "./recipesSlice";
 import { calendarItemsReducer } from "./calendarSlice";
 import { recipeSortOptionReducer } from "./recipeSortSlice";
 import { groceriesReducer } from "./groceriesSlice";
+import { userProfileReducer } from "./userProfileSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     recipeSortOption: recipeSortOptionReducer,
     calendarState: calendarItemsReducer,
     groceriesState: groceriesReducer,
+    userProfileState: userProfileReducer,
   },
 });
 
