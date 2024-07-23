@@ -4,7 +4,6 @@ import { Button, Colors, Icon, Input, useTheme } from "@rneui/themed";
 import { Input as BaseInput } from "@rneui/base";
 import {
   GoogleAuthProvider,
-  User,
   createUserWithEmailAndPassword,
   getAuth,
   signInWithCredential,
@@ -12,8 +11,6 @@ import {
 } from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Sentry from "@sentry/react-native";
-import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
-import { SortOption } from "../../redux/recipeSortSlice";
 import Constants from "expo-constants";
 import {
   GoogleSignin,
@@ -21,8 +18,7 @@ import {
   isErrorWithCode,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
-import { uploadImageToFirebase } from "../../common/uploadImageToFirebase";
-import { UserProfile } from "../../redux/userProfileSlice";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 interface LoginState {
   email: string;
@@ -45,6 +41,7 @@ export function LoginScreen() {
   const { primary, grey3 } = theme.colors;
   const styles = makeStyles(theme.colors);
   const auth = getAuth();
+  const { isSettingUpUser } = useAuthContext();
 
   const [selectedTab, setSelectedTab] = React.useState(0);
 
@@ -66,25 +63,6 @@ export function LoginScreen() {
   const passwordRef = React.createRef<BaseInput & TextInput>();
   const confirmPasswordRef = React.useRef<BaseInput & TextInput>(null);
 
-  const setupDatabase = React.useCallback(async (user: User) => {
-    const db = getFirestore();
-    const userDoc = await getDoc(doc(db, `users/${user.uid}`));
-    if (!userDoc.exists()) {
-      // store photo in firebase and use that link
-      let profile: UserProfile = { uid: user.uid, email: user.email, name: user.displayName };
-      if (user.photoURL != null) {
-        const photo = await uploadImageToFirebase(user.photoURL, `${user.uid}/image.jpg`);
-        profile = { ...profile, photo };
-      }
-
-      await setDoc(doc(db, `users/${user.uid}`), {
-        recipeSortOption: SortOption.Name,
-        groceries: [],
-        profile,
-      });
-    }
-  }, []);
-
   React.useEffect(() => {
     GoogleSignin.configure({ webClientId: Constants.expoConfig?.extra?.webClientId });
   }, []);
@@ -95,10 +73,7 @@ export function LoginScreen() {
       await GoogleSignin.hasPlayServices();
       const { idToken } = await GoogleSignin.signIn();
       const credential = GoogleAuthProvider.credential(idToken);
-      signInWithCredential(auth, credential).then(({ user }) => {
-        // set up the database in case the user is singing up
-        setupDatabase(user);
-      });
+      await signInWithCredential(auth, credential);
     } catch (error) {
       if (isErrorWithCode(error)) {
         switch (error.code) {
@@ -116,7 +91,7 @@ export function LoginScreen() {
     } finally {
       setLoginState({ loading: false });
     }
-  }, [auth, setupDatabase]);
+  }, [auth]);
 
   const handleChangeTab = (tabId: number) => () => {
     setLoginState({ error: "" });
@@ -166,8 +141,7 @@ export function LoginScreen() {
 
     try {
       setLoginState({ loading: true });
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      await setupDatabase(user);
+      await createUserWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       if (error.code === "auth/invalid-email") {
         setLoginState({ error: "Invalid email address" });
@@ -182,7 +156,7 @@ export function LoginScreen() {
     } finally {
       setLoginState({ loading: false });
     }
-  }, [auth, loginState, setupDatabase]);
+  }, [auth, loginState]);
 
   const handlePasswordDone = React.useCallback(() => {
     if (selectedTab === 0) {
@@ -279,7 +253,7 @@ export function LoginScreen() {
                 title="Sign in"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
-                loading={loginState.loading}
+                loading={loginState.loading || isSettingUpUser}
                 onPress={signIn}
               />
             ) : (
@@ -287,7 +261,7 @@ export function LoginScreen() {
                 title="Sign up"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
-                loading={loginState.loading}
+                loading={loginState.loading || isSettingUpUser}
                 onPress={signUp}
               />
             )}
@@ -301,7 +275,7 @@ export function LoginScreen() {
               color={GoogleSigninButton.Color.Dark}
               onPress={googleSignIn}
               style={styles.googleButton}
-              disabled={loginState.loading}
+              disabled={loginState.loading || isSettingUpUser}
             />
           </View>
         </ImageBackground>

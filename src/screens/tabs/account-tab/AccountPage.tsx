@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { Colors, Icon, IconProps, Image, useTheme } from "@rneui/themed";
 import { getAuth, signOut } from "firebase/auth";
 import { useAuthContext } from "../../../contexts/AuthContext";
@@ -9,6 +9,8 @@ import { TouchableOpacity } from "react-native-gesture-handler";
 import { deleteDoc, doc, getFirestore } from "firebase/firestore";
 import { StackScreenProps } from "@react-navigation/stack";
 import { AccountTabStackParamList } from "./AccountTab";
+import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
+import { fetchUserProfile, selectUserProfileState } from "../../../redux/userProfileSlice";
 
 type AccountPageProps = StackScreenProps<AccountTabStackParamList, "AccountPage">;
 
@@ -17,8 +19,16 @@ export function AccountPage({ navigation }: AccountPageProps) {
   const auth = getAuth();
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
+  const dispatch = useAppDispatch();
+  const { userProfile } = useAppSelector(selectUserProfileState);
 
   const [isDeleting, setIsDeleting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user != null) {
+      dispatch(fetchUserProfile(user.uid));
+    }
+  }, [dispatch, user]);
 
   const deleteAccount = React.useCallback(async () => {
     try {
@@ -63,12 +73,18 @@ export function AccountPage({ navigation }: AccountPageProps) {
   return (
     <View style={styles.container}>
       <View style={styles.user}>
-        {user?.photoURL == null ? (
+        {userProfile?.photo == null ? (
           <Icon style={styles.image} name="account-circle" color={theme.colors.grey2} size={70} />
         ) : (
-          <Image style={styles.image} source={{ uri: user.photoURL }} />
+          <Image
+            style={styles.image}
+            source={{ uri: userProfile.photo }}
+            PlaceholderContent={
+              <ActivityIndicator style={styles.activityIndicator} color={theme.colors.primary} />
+            }
+          />
         )}
-        <Text style={{ fontSize: 16 }}>{user?.displayName ?? user?.email ?? ""}</Text>
+        <Text style={{ fontSize: 16 }}>{userProfile.name ?? userProfile.email ?? ""}</Text>
       </View>
       <View style={styles.actions}>
         <AccountAction
@@ -131,5 +147,11 @@ const makeStyles = (colors: Colors) =>
       alignItems: "center",
       borderBottomWidth: 0.5,
       borderBottomColor: colors.primary,
+    },
+    activityIndicator: {
+      backgroundColor: colors.white,
+      borderRadius: 40,
+      height: "100%",
+      width: "100%",
     },
   });

@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
-import { uploadImageToFirebase } from "../common/uploadImageToFirebase";
 
 export interface UserProfile {
   uid: string;
@@ -15,14 +14,14 @@ interface UserProfileState {
   userProfile: UserProfile;
 }
 
-const initialState: UserProfileState = { loading: false, userProfile: { uid: "" } };
+const initialState: UserProfileState = { loading: true, userProfile: { uid: "" } };
 
 export const fetchUserProfile = createAsyncThunk(
   "userProfile/fetchUserProfile",
   async (userId: string) => {
     const db = getFirestore();
     const userDoc = getDoc(doc(db, `users/${userId}`));
-    const userProfile: UserProfile = (await userDoc).data()?.profile as UserProfile;
+    const userProfile = (await userDoc).data()?.profile as UserProfile;
     return userProfile;
   },
 );
@@ -38,14 +37,7 @@ export const updateUserProfile = createAsyncThunk(
   async ({ userId, existingUserProfile, updatedUserProfile }: UpdateUserProfileParams) => {
     const db = getFirestore();
     const userDoc = doc(db, `users/${userId}`);
-    let profile = { ...existingUserProfile, ...updatedUserProfile };
-
-    // store photo in firebase and use that link
-    if (updatedUserProfile.photo != null) {
-      const photo = await uploadImageToFirebase(updatedUserProfile.photo, `${userId}/image.jpg`);
-      profile = { ...profile, photo };
-    }
-
+    const profile = { ...existingUserProfile, ...updatedUserProfile };
     await updateDoc(userDoc, { profile });
     return profile;
   },
