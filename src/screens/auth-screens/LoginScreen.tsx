@@ -19,6 +19,7 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { useAuthContext } from "../../contexts/AuthContext";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 interface LoginState {
   email: string;
@@ -276,6 +277,28 @@ export function LoginScreen() {
               onPress={googleSignIn}
               style={styles.googleButton}
               disabled={loginState.loading || isSettingUpUser}
+            />
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={5}
+              onPress={async () => {
+                try {
+                  const credential = await AppleAuthentication.signInAsync({
+                    requestedScopes: [
+                      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                    ],
+                  });
+                  // signed in
+                } catch (e: any) {
+                  if (e.code === "ERR_REQUEST_CANCELED") {
+                    // handle that the user canceled the sign-in flow
+                  } else {
+                    // handle other errors
+                  }
+                }
+              }}
             />
           </View>
         </ImageBackground>

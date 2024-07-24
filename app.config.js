@@ -19,6 +19,7 @@ export default {
       bundleIdentifier: "com.rgoyal.nourishment",
       buildNumber: "30",
       googleServicesFile: process.env.GOOGLE_SERVICES_INFOPLIST,
+      usesAppleSignIn: true,
     },
     android: {
       package: "com.rgoyal.nourishment",
@@ -31,7 +32,11 @@ export default {
     web: {
       favicon: "./assets/favicon.png",
     },
-    plugins: ["sentry-expo", "@react-native-google-signin/google-signin"],
+    plugins: [
+      "sentry-expo",
+      "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
+    ],
     extra: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
       firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN,
