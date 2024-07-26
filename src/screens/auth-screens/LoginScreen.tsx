@@ -1,20 +1,22 @@
 import React from "react";
 import { ImageBackground, StyleSheet, Text, TextInput, View } from "react-native";
-import { Button, Colors, Icon, Input, useTheme } from "@rneui/themed";
+import { Button, Colors, Icon, Input, useTheme, Image } from "@rneui/themed";
 import { Input as BaseInput } from "@rneui/base";
 import {
   GoogleAuthProvider,
+  OAuthProvider,
+  User,
   createUserWithEmailAndPassword,
   getAuth,
   signInWithCredential,
   signInWithEmailAndPassword,
+  updateProfile,
 } from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
 import {
   GoogleSignin,
-  GoogleSigninButton,
   isErrorWithCode,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
@@ -39,7 +41,7 @@ const INITIAL_LOGIN_STATE: LoginState = {
 
 export function LoginScreen() {
   const { theme } = useTheme();
-  const { primary, grey3 } = theme.colors;
+  const { primary, secondary, grey3, white, black } = theme.colors;
   const styles = makeStyles(theme.colors);
   const auth = getAuth();
   const { isSettingUpUser } = useAuthContext();
@@ -93,6 +95,61 @@ export function LoginScreen() {
       setLoginState({ loading: false });
     }
   }, [auth]);
+
+  const updateDisplayName = React.useCallback(
+    async (fullName: AppleAuthentication.AppleAuthenticationFullName | null, user: User) => {
+      if (fullName == null) {
+        return;
+      }
+      let displayName = "";
+      const { givenName, familyName } = fullName;
+      if (givenName != null && givenName.trim().length > 0) {
+        displayName += givenName;
+      }
+      if (familyName != null && familyName.trim().length > 0) {
+        if (displayName.length > 0) {
+          displayName += ` ${familyName}`;
+        } else {
+          displayName += familyName;
+        }
+      }
+      if (displayName.length > 0) {
+        await updateProfile(user, { displayName });
+      }
+    },
+    [],
+  );
+
+  const appleSignIn = React.useCallback(async () => {
+    try {
+      setLoginState({ loading: true, error: "" });
+      const { identityToken, fullName } = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (identityToken != null) {
+        const provider = new OAuthProvider("apple.com");
+        provider.addScope("email");
+        provider.addScope("name");
+        const credential = provider.credential({ idToken: identityToken });
+        const { user } = await signInWithCredential(auth, credential);
+        await updateDisplayName(fullName, user);
+      } else {
+        throw new Error("Failed to authenticate");
+      }
+    } catch (error: any) {
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        return;
+      } else {
+        Sentry.captureException(error);
+        setLoginState({ error: "Failed to sign in" });
+      }
+    } finally {
+      setLoginState({ loading: false });
+    }
+  }, [auth, updateDisplayName]);
 
   const handleChangeTab = (tabId: number) => () => {
     setLoginState({ error: "" });
@@ -185,14 +242,14 @@ export function LoginScreen() {
               <Button
                 containerStyle={styles.tabButton}
                 onPress={handleChangeTab(0)}
-                color={selectedTab === 0 ? theme.colors.secondary : theme.colors.white}
+                color={selectedTab === 0 ? secondary : white}
                 title="Sign In"
                 titleStyle={{ color: primary }}
               />
               <Button
                 containerStyle={styles.tabButton}
                 onPress={handleChangeTab(1)}
-                color={selectedTab === 1 ? theme.colors.secondary : theme.colors.white}
+                color={selectedTab === 1 ? secondary : white}
                 title="Sign Up"
                 titleStyle={{ color: primary }}
               />
@@ -254,7 +311,7 @@ export function LoginScreen() {
                 title="Sign in"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
-                loading={loginState.loading || isSettingUpUser}
+                disabled={loginState.loading || isSettingUpUser}
                 onPress={signIn}
               />
             ) : (
@@ -262,44 +319,44 @@ export function LoginScreen() {
                 title="Sign up"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
-                loading={loginState.loading || isSettingUpUser}
+                disabled={loginState.loading || isSettingUpUser}
                 onPress={signUp}
               />
             )}
             <View style={styles.dividerContainer}>
               <View style={styles.divider} />
-              <Text style={{ color: grey3 }}>or connect with</Text>
+              <Text style={{ color: grey3 }}>
+                or {selectedTab === 0 ? "sign in" : "sign up"} with
+              </Text>
               <View style={styles.divider} />
             </View>
-            <GoogleSigninButton
-              size={GoogleSigninButton.Size.Wide}
-              color={GoogleSigninButton.Color.Dark}
-              onPress={googleSignIn}
-              style={styles.googleButton}
-              disabled={loginState.loading || isSettingUpUser}
-            />
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={5}
-              onPress={async () => {
-                try {
-                  const credential = await AppleAuthentication.signInAsync({
-                    requestedScopes: [
-                      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-                      AppleAuthentication.AppleAuthenticationScope.EMAIL,
-                    ],
-                  });
-                  // signed in
-                } catch (e: any) {
-                  if (e.code === "ERR_REQUEST_CANCELED") {
-                    // handle that the user canceled the sign-in flow
-                  } else {
-                    // handle other errors
-                  }
+            <View
+              style={{ flexDirection: "row", alignItems: "center", columnGap: 15, marginTop: 20 }}
+            >
+              <Button
+                buttonStyle={{
+                  ...styles.roundButton,
+                  backgroundColor: white,
+                }}
+                title={
+                  <Image
+                    style={styles.googleImage}
+                    source={require("../../../assets/google-icon.png")}
+                  />
                 }
-              }}
-            />
+                disabled={loginState.loading || isSettingUpUser}
+                onPress={googleSignIn}
+              />
+              <Button
+                buttonStyle={{
+                  ...styles.roundButton,
+                  backgroundColor: black,
+                }}
+                icon={<Icon name="apple1" type="ant-design" color={white} />}
+                disabled={loginState.loading || isSettingUpUser}
+                onPress={appleSignIn}
+              />
+            </View>
           </View>
         </ImageBackground>
       </View>
@@ -388,7 +445,14 @@ const makeStyles = (colors: Colors) =>
       borderBottomColor: colors.grey3,
     },
 
-    googleButton: {
-      marginTop: 20,
+    googleImage: {
+      width: 40,
+      height: 40,
+    },
+
+    roundButton: {
+      width: 50,
+      height: 50,
+      borderRadius: 100,
     },
   });

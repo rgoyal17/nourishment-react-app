@@ -166,6 +166,10 @@ function LoadedRecipeItem({ navigation, recipe }: LoadedRecipeItemProps) {
   }, [handleDeleteRecipe]);
 
   const handleEditRecipe = React.useCallback(() => {
+    if (recipe.isParsing) {
+      Alert.alert("Please wait until the recipe finishes parsing!");
+      return;
+    }
     bottomSheetRef.current?.dismiss();
     navigation.navigate("AddOrEditRecipe", { recipe, source: "edit" });
   }, [navigation, recipe]);
