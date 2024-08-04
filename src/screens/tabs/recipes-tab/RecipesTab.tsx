@@ -8,12 +8,14 @@ import { Icon } from "@rneui/base";
 import { Recipe } from "../../../redux/recipesSlice";
 import { HEADER_HEIGHT } from "../../../common/constants";
 import { FindRecipes } from "./FindRecipes";
+import { GroceriesTabStackParamList } from "../groceries-tab/GroceriesTab";
 
 export type RecipesTabStackParamList = {
   AddOrEditRecipe: { recipe?: Recipe; source: "scratch" | "import" | "edit" };
   RecipeItem: { recipeId: string };
   Recipes: undefined;
   FindRecipes: undefined;
+  GroceriesTab: { screen: keyof GroceriesTabStackParamList; params: any };
 };
 
 const Stack = createStackNavigator<RecipesTabStackParamList>();

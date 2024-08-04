@@ -125,7 +125,7 @@ export function GroceriesPage({ navigation }: GroceriesPageProps) {
 
   const handleImportFromRecipes = React.useCallback(() => {
     addBottomSheetRef.current?.dismiss();
-    navigation.navigate("RecipeGroceries");
+    navigation.navigate("RecipeGroceries", {});
   }, [navigation]);
 
   const handleImportFromCalendar = React.useCallback(() => {

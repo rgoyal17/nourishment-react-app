@@ -22,7 +22,7 @@ import { useAuthContext } from "../../../contexts/AuthContext";
 
 type RecipeGroceriesProps = StackScreenProps<GroceriesTabStackParamList, "RecipeGroceries">;
 
-export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
+export function RecipeGroceries({ navigation, route }: RecipeGroceriesProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { user } = useAuthContext();
@@ -70,6 +70,12 @@ export function RecipeGroceries({ navigation }: RecipeGroceriesProps) {
       })),
     );
   }, []);
+
+  React.useEffect(() => {
+    if (route.params.selectedRecipe != null) {
+      handleSelectRecipes([route.params.selectedRecipe]);
+    }
+  }, [handleSelectRecipes, route.params.selectedRecipe]);
 
   const handleRefresh = React.useCallback(async () => {
     if (user != null) {

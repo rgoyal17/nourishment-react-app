@@ -282,6 +282,8 @@ export function Recipes({ navigation }: RecipesProps) {
             value={recipeUrl}
             placeholder="Paste recipe URL here"
             onChangeText={(url) => setRecipeUrl(url)}
+            returnKeyType="done"
+            onSubmitEditing={handleImportClick}
           />
           <Button
             title="Import"

@@ -158,6 +158,14 @@ function LoadedRecipeItem({ navigation, recipe }: LoadedRecipeItemProps) {
     }
   }, [dispatch, navigation, recipe.id, user?.uid]);
 
+  const handleIngredientsToGrocery = React.useCallback(() => {
+    navigation.navigate("GroceriesTab", {
+      screen: "RecipeGroceries",
+      params: { selectedRecipe: recipe },
+    });
+    bottomSheetRef.current?.dismiss();
+  }, [navigation, recipe]);
+
   const handleDeleteClick = React.useCallback(async () => {
     Alert.alert("Are you sure you want to delete this recipe?", undefined, [
       { text: "Cancel" },
@@ -303,8 +311,13 @@ function LoadedRecipeItem({ navigation, recipe }: LoadedRecipeItemProps) {
 
       <BottomSheetList
         ref={bottomSheetRef}
-        snapPoints={["20%"]}
+        snapPoints={["25%"]}
         modalItems={[
+          {
+            iconProps: { name: "shopping-basket" },
+            title: "Add ingredients to grocery list",
+            onPress: handleIngredientsToGrocery,
+          },
           {
             iconProps: { name: "edit" },
             title: "Edit",

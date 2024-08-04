@@ -13,7 +13,7 @@ export type CalendarTabStackParamList = {
     editItem?: { calendarItemData: CalendarItemData; date: string };
     initialDate: string;
   };
-  CalendarPage: undefined;
+  CalendarPage: { selectedDate?: string };
 };
 
 const Stack = createStackNavigator<CalendarTabStackParamList>();
@@ -37,7 +37,12 @@ export function CalendarTab() {
         component={AddOrEditCalendarItem}
         options={{ headerRight: () => <Button title="Done" />, title: "Add To Calendar" }}
       />
-      <Stack.Screen name="CalendarPage" component={CalendarPage} options={{ title: "Calendar" }} />
+      <Stack.Screen
+        initialParams={{}}
+        name="CalendarPage"
+        component={CalendarPage}
+        options={{ title: "Calendar" }}
+      />
     </Stack.Navigator>
   );
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { ImageBackground, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, ImageBackground, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button, Colors, Icon, Input, useTheme, Image } from "@rneui/themed";
 import { Input as BaseInput } from "@rneui/base";
 import {
@@ -8,6 +8,7 @@ import {
   User,
   createUserWithEmailAndPassword,
   getAuth,
+  sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
   updateProfile,
@@ -22,6 +23,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { useAuthContext } from "../../contexts/AuthContext";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 
 interface LoginState {
   email: string;
@@ -31,10 +33,22 @@ interface LoginState {
   loading: boolean;
 }
 
+interface PasswordResetState {
+  email: string;
+  error: string;
+  loading: boolean;
+}
+
 const INITIAL_LOGIN_STATE: LoginState = {
   email: "",
   password: "",
   confirmPassword: "",
+  error: "",
+  loading: false,
+};
+
+const INITIAL_PASSWORD_STATE: PasswordResetState = {
+  email: "",
   error: "",
   loading: false,
 };
@@ -65,6 +79,21 @@ export function LoginScreen() {
 
   const passwordRef = React.createRef<BaseInput & TextInput>();
   const confirmPasswordRef = React.useRef<BaseInput & TextInput>(null);
+
+  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const snapPoints = React.useMemo(() => ["30%"], []);
+
+  const [passWordResetState, setPasswordResetState] = React.useReducer(
+    (prev: PasswordResetState, next: Partial<PasswordResetState>) => {
+      const nextState = { ...prev, ...next };
+      if (next.error == null && next.loading == null) {
+        // reset the error if email changes.
+        nextState.error = "";
+      }
+      return nextState;
+    },
+    INITIAL_PASSWORD_STATE,
+  );
 
   React.useEffect(() => {
     GoogleSignin.configure({ webClientId: Constants.expoConfig?.extra?.webClientId });
@@ -224,6 +253,27 @@ export function LoginScreen() {
     }
   }, [selectedTab, signIn]);
 
+  const handleResetPassword = React.useCallback(async () => {
+    try {
+      setPasswordResetState({ loading: true });
+      await sendPasswordResetEmail(auth, passWordResetState.email);
+      Alert.alert("Check your email to update your password!");
+      bottomSheetRef.current?.dismiss();
+      setPasswordResetState({ email: "" });
+    } catch (error: any) {
+      if (error.code === "auth/missing-email" || error.code === "auth/invalid-email") {
+        setPasswordResetState({ error: "Please enter a valid email address." });
+      } else if (error.code === "auth/user-not-found") {
+        setPasswordResetState({ error: "Email id not registered, please sign up instead." });
+      } else {
+        Sentry.captureException(error);
+        setLoginState({ error: "Failed to reset password" });
+      }
+    } finally {
+      setPasswordResetState({ loading: false });
+    }
+  }, [auth, passWordResetState.email]);
+
   return (
     <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
@@ -280,6 +330,7 @@ export function LoginScreen() {
                 )
               }
               onSubmitEditing={handlePasswordDone}
+              renderErrorMessage={selectedTab !== 0} // this is to hide bottom padding for Forgot password button
             />
             {selectedTab === 1 ? (
               <Input
@@ -305,13 +356,23 @@ export function LoginScreen() {
                 onSubmitEditing={signUp}
               />
             ) : null}
+            {selectedTab === 0 ? (
+              <Button
+                titleStyle={{ fontSize: 14 }}
+                containerStyle={styles.forgotButton}
+                size="sm"
+                type="clear"
+                title="Forgot password?"
+                onPress={() => bottomSheetRef.current?.present()}
+              />
+            ) : null}
             {loginState.error !== "" ? <Text style={styles.error}>{loginState.error}</Text> : null}
             {selectedTab === 0 ? (
               <Button
                 title="Sign in"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
-                disabled={loginState.loading || isSettingUpUser}
+                loading={loginState.loading || isSettingUpUser}
                 onPress={signIn}
               />
             ) : (
@@ -319,7 +380,7 @@ export function LoginScreen() {
                 title="Sign up"
                 containerStyle={styles.buttonContainer}
                 buttonStyle={styles.button}
-                disabled={loginState.loading || isSettingUpUser}
+                loading={loginState.loading || isSettingUpUser}
                 onPress={signUp}
               />
             )}
@@ -360,6 +421,35 @@ export function LoginScreen() {
           </View>
         </ImageBackground>
       </View>
+      <BottomSheetModal
+        enablePanDownToClose
+        snapPoints={snapPoints}
+        ref={bottomSheetRef}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        )}
+      >
+        <View style={styles.bottomSheet}>
+          <Text style={styles.forgotHeader}>Forgot your password?</Text>
+          <BottomSheetTextInput
+            placeholder="Enter your email"
+            value={passWordResetState.email}
+            onChangeText={(email) => setPasswordResetState({ email })}
+            returnKeyType="done"
+            style={{ fontSize: 16, borderBottomWidth: 0.2, paddingBottom: 5 }}
+            onSubmitEditing={handleResetPassword}
+          />
+          {passWordResetState.error !== "" ? (
+            <Text style={{ color: theme.colors.error }}>{passWordResetState.error}</Text>
+          ) : null}
+          <Button
+            buttonStyle={styles.resetButton}
+            title="Send password reset link"
+            onPress={handleResetPassword}
+            loading={passWordResetState.loading}
+          />
+        </View>
+      </BottomSheetModal>
     </KeyboardAwareScrollView>
   );
 }
@@ -420,7 +510,7 @@ const makeStyles = (colors: Colors) =>
 
     error: {
       color: colors.error,
-      marginBottom: 5,
+      marginBottom: 10,
     },
 
     button: {
@@ -454,5 +544,27 @@ const makeStyles = (colors: Colors) =>
       width: 50,
       height: 50,
       borderRadius: 100,
+    },
+
+    forgotButton: {
+      marginLeft: "auto",
+      marginTop: 5,
+      marginBottom: 10,
+    },
+
+    bottomSheet: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      rowGap: 15,
+    },
+
+    resetButton: {
+      borderRadius: 15,
+      marginTop: 10,
+    },
+
+    forgotHeader: {
+      fontSize: 16,
+      fontWeight: "500",
     },
   });

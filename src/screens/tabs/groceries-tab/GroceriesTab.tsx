@@ -8,13 +8,14 @@ import { RecipesTabStackParamList } from "../recipes-tab/RecipesTab";
 import { CalendarGroceries } from "./CalendarGroceries";
 import { RecipeGroceries } from "./RecipeGroceries";
 import { AddGroceryItem } from "./AddGroceryItem";
+import { Recipe } from "../../../redux/recipesSlice";
 
 export type GroceriesTabStackParamList = {
   RecipesTab: { screen: keyof RecipesTabStackParamList; params: any };
   CalendarTab: { screen: keyof CalendarTabStackParamList; params: any };
   GroceriesPage: undefined;
   CalendarGroceries: undefined;
-  RecipeGroceries: undefined;
+  RecipeGroceries: { selectedRecipe?: Recipe };
   AddGroceryItem: undefined;
 };
 

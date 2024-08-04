@@ -84,7 +84,7 @@ export function AddOrEditCalendarItem({ navigation, route }: AddOrEditCalendarIt
         );
       }
       await dispatch(fetchCalendarItems(user.uid));
-      navigation.navigate("CalendarPage");
+      navigation.navigate("CalendarPage", { selectedDate: getLocalDateString(date) });
     } catch (e) {
       Sentry.captureException(e);
       Alert.alert("Failed to add to calendar");

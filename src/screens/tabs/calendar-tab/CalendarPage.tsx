@@ -20,14 +20,22 @@ import { useAuthContext } from "../../../contexts/AuthContext";
 
 type CalendarItemsProps = StackScreenProps<CalendarTabStackParamList, "CalendarPage">;
 
-export function CalendarPage({ navigation }: CalendarItemsProps) {
+export function CalendarPage({ navigation, route }: CalendarItemsProps) {
   const { theme } = useTheme();
   const styles = makeStyles(theme.colors);
   const { primary } = theme.colors;
   const { user } = useAuthContext();
   const dispatch = useAppDispatch();
 
-  const [selectedDate, setSelectedDate] = React.useState(getLocalDateString(new Date()));
+  const [selectedDate, setSelectedDate] = React.useState(
+    route.params.selectedDate ?? getLocalDateString(new Date()),
+  );
+
+  React.useEffect(() => {
+    if (route.params.selectedDate != null) {
+      setSelectedDate(route.params.selectedDate);
+    }
+  }, [route.params.selectedDate]);
 
   const calendarItems = useAppSelector(selectAllCalendarItems);
   const calendarItem = useAppSelector(selectCalendarItemsByDate(selectedDate));
@@ -69,7 +77,7 @@ export function CalendarPage({ navigation }: CalendarItemsProps) {
         date={selectedDate}
         showTodayButton
         theme={{ todayButtonTextColor: primary }}
-        onDateChanged={(d) => setSelectedDate(d)}
+        onDateChanged={setSelectedDate}
       >
         <ExpandableCalendar
           firstDay={1}
