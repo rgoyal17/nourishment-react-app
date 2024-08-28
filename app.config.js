@@ -52,6 +52,9 @@ export default {
       androidClientId: process.env.ANDROID_CLIENT_ID,
       webClientId: process.env.WEB_CLIENT_ID,
 
+      edamamAppId: process.env.EDAMAM_APP_ID,
+      edamamAppKey: process.env.EDAMAM_APP_KEY,
+
       eas: {
         projectId: "4c4f8aa6-6d7a-44a7-833e-d5fc6f60dcbf",
       },
