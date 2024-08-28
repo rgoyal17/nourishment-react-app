@@ -1,8 +1,9 @@
 import "dotenv/config";
+const IS_DEV = process.env.APP_VARIANT === "development";
 
 export default {
   expo: {
-    name: "NourishMent",
+    name: IS_DEV ? "NourishMent (Dev)" : "NourishMent",
     slug: "nourishment",
     version: "1.3.3",
     orientation: "portrait",
@@ -16,13 +17,13 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.rgoyal.nourishment",
+      bundleIdentifier: IS_DEV ? "com.rgoyal.nourishmentdev" : "com.rgoyal.nourishment",
       buildNumber: "34",
       googleServicesFile: process.env.GOOGLE_SERVICES_INFOPLIST,
       usesAppleSignIn: true,
     },
     android: {
-      package: "com.rgoyal.nourishment",
+      package: IS_DEV ? "com.rgoyal.nourishmentdev" : "com.rgoyal.nourishment",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON,
       adaptiveIcon: {
         foregroundImage: "./assets/background.png",
