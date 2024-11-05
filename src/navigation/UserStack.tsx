@@ -14,10 +14,8 @@ import { fetchCalendarItems } from "../redux/calendarSlice";
 import { fetchRecipeSortOption } from "../redux/recipeSortSlice";
 import { useAuthContext } from "../contexts/AuthContext";
 import { fetchUserProfile } from "../redux/userProfileSlice";
-import { DiscoverTab } from "../screens/tabs/discover-tab/DiscoverTab";
 
 export type UserStackParamList = {
-  DiscoverTab: undefined;
   RecipesTab: undefined;
   CalendarTab: undefined;
   GroceriesTab: undefined;
@@ -53,15 +51,6 @@ export function UserStack() {
           headerTintColor: secondary,
         }}
       >
-        <Tab.Screen
-          options={{
-            tabBarIcon: ({ focused }) => <Icon name="search" color={focused ? secondary : grey2} />,
-            headerShown: false,
-            title: "Discover",
-          }}
-          name="DiscoverTab"
-          component={DiscoverTab}
-        />
         <Tab.Screen
           options={{
             tabBarIcon: ({ focused }) => (
