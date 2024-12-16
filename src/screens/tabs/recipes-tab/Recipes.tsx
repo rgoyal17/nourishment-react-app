@@ -21,6 +21,7 @@ import {
 import { BottomSheetList } from "../../../common/BottomSheetList";
 import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { useAuthContext } from "../../../contexts/AuthContext";
+import * as Sentry from "@sentry/react-native";
 
 type RecipesProps = StackScreenProps<RecipesTabStackParamList, "Recipes">;
 
@@ -160,8 +161,9 @@ export function Recipes({ navigation }: RecipesProps) {
         },
         source: "import",
       });
-    } catch {
+    } catch (e) {
       alert("Failed to import recipe");
+      Sentry.captureException(e);
     } finally {
       setLoading(false);
     }
